@@ -15,6 +15,7 @@ use App\Models\FacturacionDetalle;
 use App\Models\Pago;
 use App\Models\PagoDetalle;
 use App\Models\Pais;
+use App\Models\FormaPago;
 
 
 class InscripcionesController extends Controller
@@ -216,14 +217,15 @@ public function resumen(Request $request)
         }
         $total = $subtotal+$iva_total;
 
-
+$formasPago = FormaPago::where('estado', 'A')->get();
 return view('inscripciones.resumen', compact(
     'inscripcion',
     'participantes',
     'subtotal',
     'iva_total',
     'total',
-    'primer'
+    'primer',
+    'formasPago'
 ));
 
 

@@ -112,23 +112,34 @@
         <div class="form-group">
             <label>Nota Adicional</label>
             <textarea name="nota_facturacion" class="form-control" rows="2">{{ old('nota') }}</textarea>
-        </div>   </div>
+        </div>  
+    
+    </div>
 		
 		    <div class="col-md-5">
 
      <h5 class="celeste">Resumen de Pago</h5>
-        <table class="table w-50">
+        <table class="table ">
             <tr><th>SubTotal</th><td>${{ number_format($subtotal, 2) }}</td></tr>
             <tr><th>IVA</th><td>${{ number_format($iva_total, 2) }}</td></tr>
             <tr><th>Total</th><td><strong>${{ number_format($total, 2) }}</strong></td></tr>
         </table>
 
-         <h5 class="celeste">Forma de pago</h5>
-        <select name="forma_pago" class="form-control w-25 mb-3">
-            <option value="1">Efectivo</option>
-            <option value="2">Tarjeta</option>
-            <option value="3">Transferencia</option>
-        </select>
+        <h5 class="celeste">Forma de pago</h5>
+       <select name="forma_pago" class="form-control w-50">
+    @foreach ($formasPago as $fp)
+        <option value="{{ $fp->id }}">{{ $fp->metodo_pago }}</option>
+    @endforeach
+</select>
+        <div class="form-group w-50">
+                <label>Referencia</label>
+             
+                      <input type="text" name="referencia" class="form-control" id="">
+
+            </div>
+
+  
+        
 
         <button type="submit" class="btn btn-primary">Finalizar Inscripción</button>
 		</div>
