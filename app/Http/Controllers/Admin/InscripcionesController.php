@@ -16,12 +16,15 @@ use App\Models\Pago;
 use App\Models\PagoDetalle;
 use App\Models\Pais;
 use App\Models\FormaPago;
+use Illuminate\Support\Facades\Auth;
 
 
 class InscripcionesController extends Controller
 {
     public function index(Request $request)
     {
+
+   
         session()->forget('inscripcion_id');
         $fecha_desde = request('fecha_desde') ?? date('Y-m-d');
         $fecha_hasta = request('fecha_hasta') ?? date('Y-m-d');
@@ -29,19 +32,24 @@ class InscripcionesController extends Controller
         //$inscripciones = Inscripcion::where('created_by_id', auth()->id())->get();
 
 $participantes = Participante::with(['tipoInscripcion'])
-            ->when($request->filled('fecha_desde'), function ($query) use ($request) {
-                $query->whereDate('created_at', '>=', $request->fecha_desde);
-            })
-            ->when($request->filled('fecha_hasta'), function ($query) use ($request) {
-                $query->whereDate('created_at', '<=', $request->fecha_hasta);
-            })
-            ->get()
-            ->map(function ($p) {
-                $factura = Facturacion::where('inscripcion_id', $p->inscripcion_id)->first();
-                $detalle = FacturacionDetalle::where('participante_id', $p->id)->first();
-                $pago = PagoDetalle::where('participante_id', $p->id)->with('formaPago')->first();
+    ->when(!tieneRol('Administrador_oficina'), function ($query) {
+        $query->whereHas('pagosDetalle', function ($sub) {
+            $sub->where('created_by_id', Auth::id());
+        });
+    })
+    ->when($request->filled('fecha_desde'), function ($query) use ($request) {
+        $query->whereDate('created_at', '>=', $request->fecha_desde);
+    })
+    ->when($request->filled('fecha_hasta'), function ($query) use ($request) {
+        $query->whereDate('created_at', '<=', $request->fecha_hasta);
+    })
+    ->get()
+    ->map(function ($p) {
+        $factura = Facturacion::where('inscripcion_id', $p->inscripcion_id)->first();
+        $detalle = FacturacionDetalle::where('participante_id', $p->id)->first();
+        $pago = PagoDetalle::where('participante_id', $p->id)->with('formaPago')->first();
 
-               // dd($pago);
+  
 
                 return (object) [
                     'id' => $p->id,

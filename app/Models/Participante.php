@@ -39,4 +39,9 @@ class Participante extends Model
     return $this->belongsTo(User::class, 'created_by_id');
 }
 
+public function pagosDetalle()
+{
+    return $this->hasMany(PagoDetalle::class, 'participante_id');
+}
+
 }

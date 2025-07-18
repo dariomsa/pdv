@@ -74,7 +74,7 @@
 			     <!--inscripciones -->
                           @can('corporativas_access')
                 <li class="nav-item">
-                    <a href="{{ route("admin.inscripciones_gratuitas.index") }}" class="nav-link {{ request()->is('admin/gratuitas') || request()->is('admin/gratuitas/*') ? 'active' : '' }}">
+                    <a href="{{ route("admin.inscripciones_gratuitas.index") }}" class="nav-link {{ request()->is('admin/expense-categories') || request()->is('admin/expense-categories/*') ? 'active' : '' }}">
                         <i class="fa-fw fas fa fa-pencil nav-icon">
 
                         </i>
@@ -97,7 +97,7 @@
                         
                         @can('cierre_caja_access')
                             <li class="nav-item">
-								<a href="{{ route("admin.cierrecaja.index") }}" class="nav-link {{ request()->is('admin/cierrecaja') || request()->is('admin/cierrecaja/*') ? 'active' : '' }}">
+								<a href="{{ route("admin.cierrecaja.index") }}" class="nav-link {{ request()->is('admin/expense-categories') || request()->is('admin/expense-categories/*') ? 'active' : '' }}">
                                     <i class="fa-fw fas fa-usd nav-icon">
 
                                     </i>
@@ -108,7 +108,7 @@
 
                         @can('cierre_caja_access')
                             <li class="nav-item">
-								<a href="{{ route("admin.cajadetalle.index") }}" class="nav-link {{ request()->is('admin/cajadetalle') || request()->is('admin/cajadetalle/*') ? 'active' : '' }}">
+								<a href="{{ route("admin.cajadetalle.index") }}" class="nav-link {{ request()->is('admin/expense-categories') || request()->is('admin/expense-categories/*') ? 'active' : '' }}">
                                     <i class="fa-fw fas fa-usd nav-icon">
 
                                     </i>
