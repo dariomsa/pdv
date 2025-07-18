@@ -13,7 +13,7 @@ use App\Models\InscripcionTipo;
 use App\Models\Facturacion;
 use App\Models\FacturacionDetalle;
 use App\Models\Pago;
-use App\Models\PagoPrincipal;
+use App\Models\PagoDetalle;
 use App\Models\Pais;
 
 
@@ -36,11 +36,11 @@ $participantes = Participante::with(['tipoInscripcion'])
             })
             ->get()
             ->map(function ($p) {
-                $factura = Facturacion::where('id_inscripcion', $p->inscripcion_id)->first();
-                $detalle = FacturacionDetalle::where('id_participante', $p->id)->first();
-                $pago = Pago::where('id_participante', $p->id)->with('formaPago')->first();
+                $factura = Facturacion::where('inscripcion_id', $p->inscripcion_id)->first();
+                $detalle = FacturacionDetalle::where('participante_id', $p->id)->first();
+                $pago = PagoDetalle::where('participante_id', $p->id)->with('formaPago')->first();
 
-               // dd($factura);
+               // dd($pago);
 
                 return (object) [
                     'id' => $p->id,
@@ -250,7 +250,9 @@ public function finalizar(Request $request)
 
         try {
             // Verificar si ya existe facturación para la inscripción
-            $existing = Facturacion::where('id_inscripcion', $inscripcionId)->first();
+            $existing = Facturacion::where('inscripcion_id', $inscripcionId)->first();
+
+           
             if ($existing) {
                 return back()->with('error', 'Ya existe una factura asociada a esta inscripción.');
             }
@@ -262,18 +264,20 @@ public function finalizar(Request $request)
             $temporales = ParticipanteTemporal::where('inscripcion_id', $inscripcionId)->get();
             $facturaTipo = $temporales->count() > 1 ? 'Mult' : 'Ind';    
 
-     
+    
             
             foreach ($temporales as $temp) {
-                $data = $temp->toArray();
+             $data = $temp->toArray();
+             $data['factura'] = $facturaTipo;
 
-                   
-                $data['factura'] = $facturaTipo;
+           
 
-              
-                $nuevo = ($data);
+            unset($data['id']); // Eliminar ID para evitar conflictos de duplicado
 
-               dd($nuevo  );
+             
+            $participante = Participante::create($data);
+
+         
 
             }
 
@@ -282,6 +286,8 @@ public function finalizar(Request $request)
                 ->where('inscripcion_id', $inscripcionId)
                 ->get();
               
+
+               
    
 
             $subtotal = $participantes->sum(function ($p) {
@@ -292,11 +298,13 @@ public function finalizar(Request $request)
                 return $p->tipoInscripcion->iva ?? 0;
             });
 
+
+             
             
 
             // Crear factura
-            $factura = Facturacion::create([
-                'id_inscripcion'         => $inscripcionId ,
+            $factura =Facturacion::create ([
+                'inscripcion_id'         => $inscripcionId ,
                 'fact_tipo_documento'    => $request->fact_tipo_documento,
                 'numero_doc_facturacion' => $request->numero_doc_facturacion,
                 'nombre_facturacion'     => $request->nombre_facturacion,
@@ -310,17 +318,22 @@ public function finalizar(Request $request)
                 'pagado'                 => 1
             ]);
 
-               
-              // Crear pago principal
+            
 
-            $pagoPrincipal = PagoPrincipal::create([
-            'id_inscripcion'  => $inscripcionId,
-            'id_facturacion'  => $factura->id,
+              // Crear pago principal
+             //   dd($factura);
+
+            $pagoPrincipal = Pago::create ([
+            'inscripcion_id'  => $inscripcionId,
+            'facturacion_id'  => $factura->id,
+            'pago_id'         => $request->forma_pago,
             'total'           => $subtotal,
             'referencia'      => $request->referencia ?? null,
-            'id_pago'         => $request->forma_pago,
+            
             'estado'          => 'PAGADO' // o 'PENDIENTE' si no está confirmado
             ]);
+
+                
 
             
             // Actualizar estado de la inscripción
@@ -331,25 +344,29 @@ public function finalizar(Request $request)
                 
                 $valor = $p->tipoInscripcion->valor ?? 0;
                 $detalle=FacturacionDetalle::create([
-                    'id_facturacion' => $factura->id,
-                    'id_participante' => $p->id,
+                    'facturacion_id' => $factura->id,
+                    'participante_id' => $p->id,
                     'valor' => $valor,
                     'pagado' => 0
                     
                 ]);
 
+
+              
                     
 
-                $pago=Pago::create([
-                'id_participante' => $p->id,
-                'id_pago'         => $request->forma_pago, // debe ser ID de formas_pago
-                'id_pago_principal'   => $pagoPrincipal->id,   // Relación con pago_principal
+                $pago=PagoDetalle::create([
+                'participante_id' => $p->id,
+                'forma_pago_id' => $request->forma_pago, // debe ser ID de formas_pago
+                'pagos_id'   => $pagoPrincipal->id,   // Relación con pago_principal
                 'referencia'      => $request->referencia ?? null,
                 'monto'           => $valor,
                 'estado'          => 'A',
                 'created_by_id'   => auth()->id(),
             ]);
 
+
+             // dd(   $pago);
             //descontar stock
 
             DB::table('inventario_total')

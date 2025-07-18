@@ -17,4 +17,15 @@ class ParticipanteTemporal extends Model
         return $this->belongsTo(Inscripcion::class);
     }
 
+        public function tipoInscripcion()
+{
+   return $this->belongsTo(InscripcionTipo::class, 'tipo_inscripcion');
+}
+
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'created_by_id');
+    }
+
 }

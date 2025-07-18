@@ -9,7 +9,7 @@ class FormaPago extends Model
 {
     use HasFactory;
 
-    protected $table = 'formapagos';
+    protected $table = 'formas_pago';
     protected $guarded = [];
 
 

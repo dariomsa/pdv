@@ -9,7 +9,7 @@ class PagoDetalle extends Model
 {
     use HasFactory;
 
-    protected $table = 'pago_detalles';
+    protected $table = 'pagos_detalles';
     protected $guarded = [];
 
 
@@ -20,5 +20,10 @@ class PagoDetalle extends Model
     public function participante() {
         return $this->belongsTo(Participante::class);
     }
+
+     public function formaPago()
+{
+    return $this->belongsTo(\App\Models\FormaPago::class, 'forma_pago_id');
+}
 
 }
