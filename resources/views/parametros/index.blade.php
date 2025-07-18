@@ -20,10 +20,10 @@
 
                 <h5 class="celeste" >Formas de pago</h5>
     <table class="table table-bordered">
-        <thead><tr><th>ID</th><th>Nombre</th></tr></thead>
+        <thead><tr><th>ID</th><th>Nombre</th><th>ACTIVO</th></tr></thead>
         <tbody>
             @foreach($formasPago as $fp)
-            <tr><td>{{ $fp->id }}</td><td>{{ $fp->metodo_pago }}</td></tr>
+            <tr><td>{{ $fp->id }}</td><td>{{ $fp->metodo_pago }}</td><td>{{ $fp->estado }}</td></tr>
             @endforeach
         </tbody>
     </table>
