@@ -5,16 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class FormaPago extends Model
+class InventarioTotal extends Model
 {
     use HasFactory;
 
-    protected $table = 'formapagos';
+    protected $table = 'inventario_total';
     protected $guarded = [];
-
-
-    public function detalles() {
-        return $this->hasMany(CierreCajaDetalle::class);
-    }
-
 }

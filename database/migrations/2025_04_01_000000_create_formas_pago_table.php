@@ -8,17 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('inscripcion_tipo', function (Blueprint $table) {
+        Schema::create('formas_pago', function (Blueprint $table) {
             $table->id();
-            $table->string('nombre');
-            $table->decimal('valor', 8, 2);
-            $table->decimal('iva', 4, 2);
+            $table->string('metodo_pago');
+            $table->string('estado', 1)->default('A');
+            $table->string('tipo_pago');
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('inscripcion_tipo');
+        Schema::dropIfExists('formas_pago');
     }
 };

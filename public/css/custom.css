@@ -106,3 +106,27 @@ table.dataTable thead .sorting_desc {
     padding-left: 0px;
     padding-right: 0px;
 }
+.celeste{
+    color:#20a8d8;
+}
+
+
+.table td, .table th {
+    padding: 0.25rem;}
+
+    body {
+  font-size: 0.675rem !important;
+    }
+
+       .app-header .navbar-brand {
+position: absolute;
+top: 0;
+left: 50%;
+margin-left: -77.5px;
+margin-top: -10px;
+}
+
+.sidebar .nav-link.active {
+  
+    background: #488fc5 !important;
+}

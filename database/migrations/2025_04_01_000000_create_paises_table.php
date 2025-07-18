@@ -8,17 +8,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('inscripcion_tipo', function (Blueprint $table) {
+        Schema::create('paises', function (Blueprint $table) {
             $table->id();
+            $table->string('codigo', 5)->unique();
             $table->string('nombre');
-            $table->decimal('valor', 8, 2);
-            $table->decimal('iva', 4, 2);
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('inscripcion_tipo');
+        Schema::dropIfExists('paises');
     }
 };

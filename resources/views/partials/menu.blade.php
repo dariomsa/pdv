@@ -45,63 +45,139 @@
                 </li>
             @endcan
 
-            @can('expense_category_access')
+            <!--inscripciones -->
+            @can('inscripciones_access')
                 <li class="nav-item">
-                    <a href="{{ route("admin.expense-categories.index") }}" class="nav-link {{ request()->is('admin/expense-categories') || request()->is('admin/expense-categories/*') ? 'active' : '' }}">
-                        <i class="fa-fw fas fa-list nav-icon">
+                    <a href="{{ route("admin.inscripciones.index") }}" class="nav-link {{ request()->is('admin/inscripciones') || request()->is('admin/inscripciones/*') ? 'active' : '' }}">
+                        <i class="fa-fw fas fa fa-pencil nav-icon">
 
                         </i>
-                        {{ trans('cruds.expenseCategory.title') }}
+                        INSCRIPCIONES
                     </a>
                 </li>
             @endcan
-            @can('income_category_access')
+            <!--inscripciones -->
+			
+			  <!--inscripciones -->
+            @can('corporativas_access')
                 <li class="nav-item">
-                    <a href="{{ route("admin.income-categories.index") }}" class="nav-link {{ request()->is('admin/income-categories') || request()->is('admin/income-categories/*') ? 'active' : '' }}">
-                        <i class="fa-fw fas fa-list nav-icon">
+                    <a href="{{ route("admin.corporativas.index") }}" class="nav-link {{ request()->is('admin/corporativas') || request()->is('admin/expense-categories/*') ? 'active' : '' }}">
+                        <i class="fa-fw fas fa fa-pencil nav-icon">
 
                         </i>
-                        {{ trans('cruds.incomeCategory.title') }}
+                        CORPORATIVAS
                     </a>
                 </li>
             @endcan
-            @can('expense_access')
+            <!--inscripciones -->
+
+			     <!--inscripciones -->
+                          @can('corporativas_access')
                 <li class="nav-item">
-                    <a href="{{ route("admin.expenses.index") }}" class="nav-link {{ request()->is('admin/expenses') || request()->is('admin/expenses/*') ? 'active' : '' }}">
-                        <i class="fa-fw fas fa-arrow-circle-right nav-icon">
+                    <a href="{{ route("admin.inscripciones_gratuitas.index") }}" class="nav-link {{ request()->is('admin/gratuitas') || request()->is('admin/gratuitas/*') ? 'active' : '' }}">
+                        <i class="fa-fw fas fa fa-pencil nav-icon">
 
                         </i>
-                        {{ trans('cruds.expense.title') }}
+                        GRATUITAS
                     </a>
                 </li>
             @endcan
-            @can('income_access')
-                <li class="nav-item">
-                    <a href="{{ route("admin.incomes.index") }}" class="nav-link {{ request()->is('admin/incomes') || request()->is('admin/incomes/*') ? 'active' : '' }}">
-                        <i class="fa-fw fas fa-arrow-circle-right nav-icon">
+            <!--inscripciones -->				 
+            <!--ventas-->
+
+            @can('cierre_caja_access')
+                <li class="nav-item nav-dropdown">
+                    <a class="nav-link  nav-dropdown-toggle" href="#">
+                        <i class="fa-fw fas fa-users nav-icon">
 
                         </i>
-                        {{ trans('cruds.income.title') }}
+                       VENTAS
                     </a>
+                    <ul class="nav-dropdown-items">
+                        
+                        @can('cierre_caja_access')
+                            <li class="nav-item">
+								<a href="{{ route("admin.cierrecaja.index") }}" class="nav-link {{ request()->is('admin/cierrecaja') || request()->is('admin/cierrecaja/*') ? 'active' : '' }}">
+                                    <i class="fa-fw fas fa-usd nav-icon">
+
+                                    </i>
+                                   Cierre de Caja
+                                </a>
+                            </li>
+                        @endcan
+
+                        @can('cierre_caja_access')
+                            <li class="nav-item">
+								<a href="{{ route("admin.cajadetalle.index") }}" class="nav-link {{ request()->is('admin/cajadetalle') || request()->is('admin/cajadetalle/*') ? 'active' : '' }}">
+                                    <i class="fa-fw fas fa-usd nav-icon">
+
+                                    </i>
+                                   Cierre Detallado 
+                                </a>
+                            </li>
+                        @endcan
+                    
+                    </ul>
                 </li>
             @endcan
-            @can('expense_report_access')
-                <li class="nav-item">
-                    <a href="{{ route("admin.expense-reports.index") }}" class="nav-link {{ request()->is('admin/expense-reports') || request()->is('admin/expense-reports/*') ? 'active' : '' }}">
-                        <i class="fa-fw fas fa-chart-line nav-icon">
+
+            <!-- fin ventas -->
+
+            <!-- reportes -->
+
+            @can('inscripciones_access')
+                <li class="nav-item nav-dropdown">
+                    <a class="nav-link  nav-dropdown-toggle" href="#">
+                        <i class="fa-fw fas fa-users nav-icon">
 
                         </i>
-                        {{ trans('cruds.expenseReport.title') }}
+                     REPORTES
                     </a>
+                    <ul class="nav-dropdown-items">
+                        @can('ventas_diarias_access')
+                            <li class="nav-item">
+                                <a href="{{ route("admin.reporteventasdiarias.index") }}" class="nav-link {{ request()->is('admin/permissions') || request()->is('admin/permissions/*') ? 'active' : '' }}">
+                                    <i class="fa-fw fas fa-unlock-alt nav-icon">
+
+                                    </i>
+                                    Ventas Diarias
+                                </a>
+                            </li>
+                        @endcan
+                      
+                        @can('ventas_generales_access')
+                            <li class="nav-item">
+                                <a href="{{ route("admin.reporteventasgenerales.index") }}" class="nav-link {{ request()->is('admin/permissions') || request()->is('admin/permissions/*') ? 'active' : '' }}">
+                                    <i class="fa-fw fas fa-unlock-alt nav-icon">
+
+                                    </i>
+                                    Ventas Generales
+                                </a>
+                            </li>
+                        @endcan			
+                     
+                                         
+                    </ul>
                 </li>
             @endcan
+
+
+
+              <li class="nav-item">
+                    <a href="{{ route("admin.parametros.index") }}" class="nav-link {{ request()->is('admin/expense-categories') || request()->is('admin/expense-categories/*') ? 'active' : '' }}">
+                        <i class="fa-fw fas fa fa-pencil nav-icon">
+
+                        </i>
+                        PARÁMETROS
+                    </a>
+                </li>
 
             <li class="nav-item">
                 <a href="#" class="nav-link" onclick="event.preventDefault(); document.getElementById('logoutform').submit();">
                     <i class="nav-icon fas fa-fw fa-sign-out-alt">
 
                     </i>
-                    {{ trans('global.logout') }}
+                  Salir
                 </a>
             </li>
         </ul>

@@ -29,4 +29,9 @@ class Inscripcion extends Model
         return $this->hasMany(Pago::class);
     }
 
+     public function participantes_temporal()
+    {
+        return $this->hasMany(ParticipanteTemporal::class);
+    }
+
 }
