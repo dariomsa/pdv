@@ -29,13 +29,10 @@ class InscripcionesController extends Controller
         $fecha_desde = request('fecha_desde') ?? date('Y-m-d');
         $fecha_hasta = request('fecha_hasta') ?? date('Y-m-d');
 
-        //$inscripciones = Inscripcion::where('created_by_id', auth()->id())->get();
 
-$participantes = Participante::with(['tipoInscripcion'])
+    $participantes = Participante::with(['tipoInscripcion'])
     ->when(!tieneRol('Administrador_oficina'), function ($query) {
-        $query->whereHas('pagosDetalle', function ($sub) {
-            $sub->where('created_by_id', Auth::id());
-        });
+        $query->where('created_by_id', Auth::id());
     })
     ->when($request->filled('fecha_desde'), function ($query) use ($request) {
         $query->whereDate('created_at', '>=', $request->fecha_desde);
@@ -274,21 +271,12 @@ public function finalizar(Request $request)
             $temporales = ParticipanteTemporal::where('inscripcion_id', $inscripcionId)->get();
             $facturaTipo = $temporales->count() > 1 ? 'Mult' : 'Ind';    
 
-    
-            
+               
             foreach ($temporales as $temp) {
              $data = $temp->toArray();
              $data['factura'] = $facturaTipo;
-
-           
-
-            unset($data['id']); // Eliminar ID para evitar conflictos de duplicado
-
-             
-            $participante = Participante::create($data);
-
-         
-
+             unset($data['id']); // Eliminar ID para evitar conflictos de duplicado
+             $participante = Participante::create($data);
             }
 
            

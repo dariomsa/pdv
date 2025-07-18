@@ -16,5 +16,8 @@ class InscripcionTipo extends Model
     public function participantes() {
         return $this->hasMany(Participante::class, 'tipo_inscripcion');
     }
+    
+
+    
 
 }
