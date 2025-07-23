@@ -37,7 +37,7 @@
                                 <th>Nombres</th>
                                 <th>Documento</th>
                                 <th>Género</th>
-                                <th>Nacionalidad</th>
+                                <th>Correo</th>
                                 <th>Fecha de Nacimiento</th>
                                 <th>Talla Camiseta</th>
                             
@@ -50,9 +50,9 @@
                                 <td>{{ $p->nombres }} {{ $p->apellidos }}</td>
                                 <td>{{ $p->tipo_documento }} - {{ $p->numero_documento }}</td>
                                 <td>{{ ucfirst($p->genero) }}</td>
-                                <td>{{ $p->nacionalidad }}</td>
+                                <td>{{ $p->email }}</td>
                                 <td>{{ \Carbon\Carbon::parse($p->fecha_nacimiento)->format('d/m/Y') }}</td>
-                                <td>{{ $p->talla_camiseta }}</td>
+                                <td>{{ $p->talla }}</td>
                                
                             </tr>
                             @endforeach

@@ -25,14 +25,15 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::post('inscripciones/resumen', 'InscripcionesController@resumen')->name('inscripciones.resumen');
     Route::post('inscripciones/finalizar', 'InscripcionesController@finalizar')->name('inscripciones.finalizar');
    
+    
     // Inscripciones Gratuitas
     Route::resource('inscripciones_gratuitas', 'InscripcionesGratuitaController');
     Route::post('inscripciones_gratuitas/resumen', 'InscripcionesGratuitaController@resumen')->name('inscripciones_gratuitas.resumen');
     Route::post('inscripciones_gratuitas/finalizar', 'InscripcionesGratuitaController@finalizar')->name('inscripciones_gratuitas.finalizar');
 
     
-    //Route::delete('inscripciones/destroy', 'ParticipanteController@massDestroy')->name('participantes.destroy');
-	Route::resource('participantes', 'ParticipanteController'::class);
+    Route::delete('inscripciones/destroy', 'ParticipanteController@massDestroy')->name('participantes.destroy');
+	//Route::resource('participantes', 'ParticipanteController'::class);
      
 
     	//Cierre de Caja
@@ -47,8 +48,15 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
   
       
 	 // Corporativas
+    Route::get('corporativas/resumen', 'CorporativasController@resumen')->name('corporativas.resumen');
+    
+    Route::post('corporativas/finalizar', 'CorporativasController@finalizar')->name('corporativas.finalizar');
+    Route::post('corporativas/gratuitas', 'CorporativasController@gratuitas')->name('corporativas.gratuitas');
+    Route::post('corporativas/linkpago', 'CorporativasController@linkpago')->name('corporativas.linkpago');
+       
+    
     Route::resource('corporativas', 'CorporativasController');
-    Route::post('/subir','CorporativasController@subirArchivo')->name('subir');
+   
 
 
     

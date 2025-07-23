@@ -36,7 +36,7 @@
                                 <th>Nombres</th>
                                 <th>Documento</th>
                                 <th>Género</th>
-                                <th>Nacionalidad</th>
+                               <th>Correo</th>
                                 <th>Fecha de Nacimiento</th>
                                 <th>Talla Camiseta</th>
                                 <th>Acciones</th>
@@ -49,9 +49,9 @@
                                 <td>{{ $p->nombres }} {{ $p->apellidos }}</td>
                                 <td>{{ $p->tipo_documento }} - {{ $p->numero_documento }}</td>
                                 <td>{{ ucfirst($p->genero) }}</td>
-                                <td>{{ $p->nacionalidad }}</td>
+                                  <td>{{ $p->email }}</td>
                                 <td>{{ \Carbon\Carbon::parse($p->fecha_nacimiento)->format('d/m/Y') }}</td>
-                                <td>{{ $p->talla_camiseta }}</td>
+                                 <td>{{ $p->talla }}</td>
                                 <td>
                                     <form action="{{ route('admin.participantes.destroy', $p->id) }}" method="POST" onsubmit="return confirm('¿Eliminar este participante?')">
                                         @csrf
@@ -138,7 +138,7 @@
                     </div>
                     <div class="form-group col-md-3">
                         <label for="fecha_nacimiento">Fecha de Nacimiento</label>
-                        <input type="date" class="form-control" name="fecha_nacimiento" required>
+                         <input type="date" class="form-control" max="2010-01-01" name="fecha_nacimiento" required>
                     </div>
   <div class="form-group col-md-3">
                     <label for="categoria">Categoría</label>
@@ -162,7 +162,26 @@
                     </div>
                     <div class="form-group col-md-4">
                         <label for="celular">Celular Participante</label>
-                        		<input autocomplete="off"  type="text" class="form-control" maxlength="10"  minlength="10"  required name="celular" id="celular_participante">
+                        	<div class="input-group">
+    <div class="input-group-prepend">
+        <span class="input-group-text">
+            EC +593
+        </span>
+    </div>
+    <input
+        type="text"
+        name="celular"
+        id="celular_participante"
+        class="form-control"
+        pattern="^0[0-9]{9}$"
+        title="Debe comenzar con 0 y tener 10 dígitos"
+        maxlength="10"
+        minlength="10"
+        required
+        autocomplete="off"
+        placeholder="09xxxxxxxx"
+    >
+</div>								
                     </div>
                     <div class="form-group col-md-4">
                         <label for="email">Email Participante</label>
@@ -198,7 +217,26 @@
                     </div>
                     <div class="form-group col-md-6">
                         <label for="emergencia_celular">Celular</label>
-                        	<input autocomplete="off"  type="text" class="form-control" maxlength="10"  minlength="10"  required name="emergencia_celular" >
+
+                      <div class="input-group">
+    <div class="input-group-prepend">
+        <span class="input-group-text">
+            EC +593
+        </span>
+    </div>
+    <input
+        type="text"
+        name="emergencia_celular"
+        class="form-control"
+        pattern="^0[0-9]{9}$"
+        title="Debe comenzar con 0 y tener 10 dígitos"
+        maxlength="10"
+        minlength="10"
+        required
+        autocomplete="off"
+        placeholder="09xxxxxxxx"
+    >
+</div>					   
                     </div> 
                 </div>
             </div>

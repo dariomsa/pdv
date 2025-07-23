@@ -2,8 +2,8 @@
 @section('content')
   <div style="margin-bottom: 10px;" class="row">
         <div class="col-lg-12">
-            <a class="btn btn-success" href="{{ route('admin.inscripciones.create') }}">
-                Añadir Participante
+            <a class="btn btn-success" href="{{ route('admin.corporativas.create') }}">
+                Añadir Corporativas
             </a>
         </div>
     </div>
@@ -72,7 +72,7 @@
             </thead>
 					
 				  <tbody>
-
+             
 		            @foreach($participantes as $participante)
 
                     <tr>
@@ -82,7 +82,7 @@
                         <td>{{ $participante->empresa_factura ?? 'ND' }}</td>
                         <td>{{ $participante->telefono_factura ?? 'ND' }}</td>
                         <td>{{ $participante->origen ?? 'ND' }}</td>
-                        <td>{{ $participante->tipoInscripcion->nombre ?? 'ND' }} - {{ $participante->factura }} </td>
+                        <td> {{ $participante->factura }} </td>
                         <td>{{ $participante->tipo_documento }}</td>
                         <td>{{ $participante->numero_documento }}</td>
                         <td>{{ $participante->nombres }}</td>

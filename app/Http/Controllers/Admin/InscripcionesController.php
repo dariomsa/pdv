@@ -21,65 +21,58 @@ use Illuminate\Support\Facades\Auth;
 
 class InscripcionesController extends Controller
 {
+    
+
     public function index(Request $request)
-    {
+{
+    session()->forget('inscripcion_id');
 
-   
-        session()->forget('inscripcion_id');
-        $fecha_desde = request('fecha_desde') ?? date('Y-m-d');
-        $fecha_hasta = request('fecha_hasta') ?? date('Y-m-d');
-
+    $hoy = date('Y-m-d');
+    $fecha_desde = $request->filled('fecha_desde') ? $request->fecha_desde : $hoy;
+    $fecha_hasta = $request->filled('fecha_hasta') ? $request->fecha_hasta : $hoy;
 
     $participantes = Participante::with(['tipoInscripcion'])
-    ->when(!tieneRol('Administrador_oficina'), function ($query) {
-        $query->where('created_by_id', Auth::id());
-    })
-    ->when($request->filled('fecha_desde'), function ($query) use ($request) {
-        $query->whereDate('created_at', '>=', $request->fecha_desde);
-    })
-    ->when($request->filled('fecha_hasta'), function ($query) use ($request) {
-        $query->whereDate('created_at', '<=', $request->fecha_hasta);
-    })
-    ->get()
-    ->map(function ($p) {
-        $factura = Facturacion::where('inscripcion_id', $p->inscripcion_id)->first();
-        $detalle = FacturacionDetalle::where('participante_id', $p->id)->first();
-        $pago = PagoDetalle::where('participante_id', $p->id)->with('formaPago')->first();
+        ->when(!tieneRol('Administrador_oficina'), function ($query) {
+            $query->where('created_by_id', Auth::id());
+        })
+        ->whereDate('created_at', '>=', $fecha_desde)
+        ->whereDate('created_at', '<=', $fecha_hasta)
+        ->get()
+        ->map(function ($p) {
+            $factura = Facturacion::where('inscripcion_id', $p->inscripcion_id)->first();
+            $detalle = FacturacionDetalle::where('participante_id', $p->id)->first();
+            $pago = PagoDetalle::where('participante_id', $p->id)->with('formaPago')->first();
 
-  
+            return (object)[
+                'id' => $p->id,
+                'created_at' => $p->created_at,
+                'factura_numero' => $factura ? substr($factura->clave_acceso, 0, 15) : 'ND',
+                'empresa_factura' => $factura->nombre_facturacion ?? 'ND',
+                'telefono_factura' => $factura->telefono_facturacion ?? 'ND',
+                'origen' => $p->creador->name ?? 'ND',
+                'tipoInscripcion' => $p->tipoInscripcion,
+                'tipo_documento' => $p->tipo_documento,
+                'numero_documento' => $p->numero_documento,
+                'nombres' => $p->nombres,
+                'apellidos' => $p->apellidos,
+                'genero' => $p->genero,
+                'corral' => 'ND',
+                'categoria' => $p->categoria,
+                'fecha_nacimiento' => $p->fecha_nacimiento,
+                'talla' => $p->talla,
+                'email' => $p->email,
+                'factura' => $p->factura,
+                'metodo_pago' => $pago->formaPago->metodo_pago ?? 'ND',
+                'referencia' => $pago->referencia ?? 'ND',
+                'sub_total' => $detalle ? number_format($detalle->valor / 1.15, 2) : 'ND',
+                'iva' => $detalle ? number_format($detalle->valor - ($detalle->valor / 1.15), 2) : 'ND',
+                'total' => $detalle->valor ?? 'ND',
+                'discapacidad' => 'ND',
+            ];
+        });
 
-                return (object) [
-                    'id' => $p->id,
-                    'created_at' => $p->created_at,
-                   'factura_numero' => $factura ? substr($factura->clave_acceso, 0, 15) : 'ND',
-                    'empresa_factura' => $factura->nombre_facturacion ?? 'ND',
-                    'telefono_factura' => $factura->telefono_facturacion ?? 'ND',
-                    'origen' => $p->creador->name ?? 'ND',
-                    'tipoInscripcion' => $p->tipoInscripcion,
-                    'tipo_documento' => $p->tipo_documento,
-                    'numero_documento' => $p->numero_documento,
-                    'nombres' => $p->nombres,
-                    'apellidos' => $p->apellidos,
-                    'genero' => $p->genero,
-                    'corral' => 'ND',
-                    'categoria' => $p->categoria,
-                    'fecha_nacimiento' => $p->fecha_nacimiento,
-                    'talla' => $p->talla,
-                    'email' => $p->email,
-                    'factura' => $p->factura,
-                    'metodo_pago' => $pago->formaPago->metodo_pago ?? 'ND',
-                    'referencia' => $pago->referencia ?? 'ND',
-                    'sub_total' => $detalle ? number_format($detalle->valor / 1.15, 2) : 'ND',
-                    'iva' => $detalle ? number_format($detalle->valor - ($detalle->valor / 1.15), 2) : 'ND',
-                    'total' => $detalle->valor ?? 'ND',
-                    'discapacidad' => 'ND',
-                ];
-            });
-
-        return view('inscripciones.index', compact('participantes', 'fecha_desde', 'fecha_hasta'));
-
-
-    }
+    return view('inscripciones.index', compact('participantes', 'fecha_desde', 'fecha_hasta'));
+}
 
     public function create(Request $request)
     {
@@ -113,6 +106,15 @@ class InscripcionesController extends Controller
              'talla' => 'required',
         ]);
 
+         // Calcular edad
+            $fechaNacimiento = \Carbon\Carbon::parse($request->fecha_nacimiento);
+            $edad = $fechaNacimiento->age;
+       
+            if ($edad < 15) {
+             return back()->with('error', 'La fecha de nacimiento no es válida. El participante debe tener al menos 1 año.');
+            }
+           
+
         // verifica stock de camisetas
         $stock = DB::table('inventario_total')
         ->where('talla', $request->talla)
@@ -131,10 +133,6 @@ class InscripcionesController extends Controller
             // Obtener o crear inscripción
             $inscripcionId = session('inscripcion_id');
      
-
-            
-               
-
             if (!$inscripcionId) {
 
                 $inscripcion = Inscripcion::create([
@@ -154,10 +152,7 @@ class InscripcionesController extends Controller
 
             $data = $request->all();
 
-             
-            // Calcular edad
-            $fechaNacimiento = \Carbon\Carbon::parse($request->fecha_nacimiento);
-            $edad = $fechaNacimiento->age;
+
 
             // Buscar categoría por edad
             $categoria = Categoria::where('edad_min', '<=', $edad)
@@ -166,7 +161,7 @@ class InscripcionesController extends Controller
                 })
                 ->first();
 
-            $data['categoria'] =  'Sin categoría';
+            $data['categoria'] =  $categoria->nombre;
             $data['tercera_edad'] = $edad >= 65 ? 1 : 0;
             $data['created_by_id'] = auth()->id();
 			$data['inscripcion_id'] = $inscripcionId;
@@ -285,10 +280,7 @@ public function finalizar(Request $request)
                 ->get();
               
 
-               
-   
-
-            $subtotal = $participantes->sum(function ($p) {
+                          $subtotal = $participantes->sum(function ($p) {
                 return $p->tipoInscripcion->valor ?? 0;
             });
 

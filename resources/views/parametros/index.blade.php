@@ -8,10 +8,12 @@
  <div class="participant-form border p-3 mb-4 rounded">
                 <h5 class="celeste" >Categorías</h5>
     <table class="table table-bordered">
-        <thead><tr><th>ID</th><th>Nombre</th></tr></thead>
+        <thead><tr><th>ID</th><th>Nombre</th> <th>Edad Mín</th><th>Edad Máx</th></tr></thead>
         <tbody>
             @foreach($categorias as $cat)
-            <tr><td>{{ $cat->id }}</td><td>{{ $cat->nombre }}</td></tr>
+            <tr><td>{{ $cat->id }}</td><td>{{ $cat->nombre }}</td> <td>{{ $cat->edad_min }}</td> <td>{{ $cat->edad_max }}</td>
+        
+        </tr>
             @endforeach
         </tbody>
     </table>
@@ -38,6 +40,17 @@
         <tbody>
             @foreach($tiposInscripcion as $tipo)
             <tr><td>{{ $tipo->id }}</td><td>{{ $tipo->nombre }}</td><td>{{ $tipo->valor }}</td></tr>
+            @endforeach
+        </tbody>
+    </table>
+
+
+         <h5 class="celeste" >Tipos de Inscripción Corporativas</h5>
+    <table class="table table-bordered">
+        <thead><tr><th>ID</th><th>Nombre</th><th>Valor</th></tr></thead>
+        <tbody>
+            @foreach($tiposInscripcionCorp as $tipoCorp)
+            <tr><td>{{ $tipoCorp->id }}</td><td>{{ $tipoCorp->nombre }}</td><td>{{ $tipoCorp->valor }}</td></tr>
             @endforeach
         </tbody>
     </table>

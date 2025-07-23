@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Participante;
+use App\Models\FacturacionCorporativa;
 use App\Models\Facturacion;
 use App\Models\FacturacionDetalle;
 use App\Models\PagoDetalle;
 use App\Models\ParticipanteGratuita;
+use App\Models\ParticipanteCorporativa;
 
 
 
@@ -94,9 +96,43 @@ class ReporteVentasGeneralesController extends Controller
             ];
         });
 
-    $data = $participantesNormales->merge($participantesGratuitos);
+         $corporativos = ParticipanteCorporativa::with(['tipoInscripcion', 'creador'])
+        ->whereBetween('created_at', [$fecha_desde . ' 00:00:00', $fecha_hasta . ' 23:59:59'])
+        ->get()
+        ->map(function ($p) {
+         $factura = FacturacionCorporativa::where('inscripcion_id', $p->inscripcion_id)->with('formaPago')->first();
 
-    dd($data);
+                  return (object)[
+                'id' => $p->id,
+                'created_at' => $p->created_at,
+                'factura_numero' => $factura ? substr($factura->clave_acceso, 0, 15) : 'ND',
+                'empresa_factura' => $factura->empresa ?? 'ND',
+                'telefono_factura' => $factura->telefono?? 'ND',
+                'origen' => $p->creador->name ?? 'ND',
+                'tipoInscripcion' => $p->tipoInscripcion,
+                'tipo_documento' => $p->tipo_documento,
+                'numero_documento' => $p->numero_documento,
+                'nombres' => $p->nombres,
+                'apellidos' => $p->apellidos,
+                'genero' => $p->genero,
+                'corral' => 'ND',
+                'categoria' => $p->categoria,
+                'fecha_nacimiento' => $p->fecha_nacimiento,
+                'talla' => $p->talla,
+                'email' => $p->email,
+                'factura' => 'CORPORATIVAS',
+                'metodo_pago' => $factura->formaPago->metodo_pago ?? 'NO APLICA',
+                'referencia' => $factura->referencia ?? 'ND',
+                'sub_total' => $factura ? number_format($factura->valor / 1.15, 2) : '0.00',
+                'iva' => $factura ? number_format($factura->valor - ($factura->valor / 1.15), 2) : '0.00',
+                'total' => $factura->valor ?? '0.00',
+                'discapacidad' => 'ND',
+            ];
+        });
+
+    $data = $participantesNormales->merge($participantesGratuitos)->merge($corporativos);
+
+   // dd($data);
 
     return view('reportes.ventas_generales', compact('data', 'fecha_desde', 'fecha_hasta'));
 }
