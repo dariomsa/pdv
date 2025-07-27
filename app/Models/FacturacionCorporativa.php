@@ -14,4 +14,9 @@ class FacturacionCorporativa extends Model
     return $this->belongsTo(FormaPago::class, 'forma_pago_id', 'id');
 }
 
+ public function inscripcion() {
+        return $this->belongsTo(InscripcionCorporativa::class);
+    }
+
+
 }

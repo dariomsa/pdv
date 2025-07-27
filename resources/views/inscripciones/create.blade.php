@@ -229,6 +229,7 @@
     <input
         type="text"
         name="emergencia_celular"
+        id="emergencia_celular"
         class="form-control"
         pattern="^0[0-9]{9}$"
         title="Debe comenzar con 0 y tener 10 dígitos"
@@ -359,55 +360,13 @@
   
   
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.14.1/themes/base/jquery-ui.css">
-  <link rel="stylesheet" href="/resources/demos/style.css">
   <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
   <script src="https://code.jquery.com/ui/1.14.1/jquery-ui.js"></script>
 
 
-   <script>
-  $( function() {
-    $( "#inscripcion_nacimiento" ).datepicker(
-	
-	{
-        dateFormat: 'yy-mm-dd',
-		 language: 'es',
-        changeMonth: true,
-        changeYear: true,
-		 yearRange: "1900:2018",
-        minDate: new Date(1900, 10 - 1, 25),
-        maxDate: new Date(2009, 03, 10),
-        inline: true
-    }
-	);
-	
-	
-	
-  } );
-  </script>
+
   
-  <script>
- $.datepicker.regional['es'] = {
- closeText: 'Cerrar',
- prevText: '< Ant',
- nextText: 'Sig >',
- currentText: 'Hoy',
- monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
- monthNamesShort: ['Ene','Feb','Mar','Abr', 'May','Jun','Jul','Ago','Sep', 'Oct','Nov','Dic'],
- dayNames: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
- dayNamesShort: ['Dom','Lun','Mar','Mié','Juv','Vie','Sáb'],
- dayNamesMin: ['Do','Lu','Ma','Mi','Ju','Vi','Sá'],
- weekHeader: 'Sm',
- dateFormat: 'dd/mm/yy',
- firstDay: 1,
- isRTL: false,
- showMonthAfterYear: false,
- yearSuffix: ''
- };
- $.datepicker.setDefaults($.datepicker.regional['es']);
-$(function () {
-$("#fecha").datepicker();
-});
-</script>
+
 
 
 <script>
@@ -438,6 +397,17 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+
+
+	  //Validar las cajas de texto...
+        $('#emergencia_celular, #celular_participante').on('input', function (evt) {
+				
+    
+        jQuery(this).val(jQuery(this).val().replace(/[^0-9]/g, ''));
+      
+          
+        });
+
 </script>
 
 @endsection

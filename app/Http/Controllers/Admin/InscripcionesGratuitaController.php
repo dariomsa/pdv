@@ -17,6 +17,7 @@ use App\Models\PagoDetalle;
 use App\Models\Pais;
 use App\Models\FormaPago;
 use Illuminate\Support\Facades\Auth;
+use App\helpers\ParticipanteHelper;
 
 
 
@@ -100,6 +101,19 @@ class InscripcionesGratuitaController extends Controller
         'celular' => 'required|string|max:10',
         'talla' => 'required',
     ]);
+
+     if (ParticipanteHelper::yaInscrito($request->numero_documento)) {
+        return redirect()->back()->with('success', 'El participante '.$request->numero_documento. '  ya está inscrito en otra modalidad.');
+    }
+
+         // Calcular edad
+            $fechaNacimiento = \Carbon\Carbon::parse($request->fecha_nacimiento);
+            $edad = $fechaNacimiento->age;
+       
+            if ($edad < 15) {
+             return back()->with('error', 'La fecha de nacimiento no es válida. El participante debe tener al menos 1 año.');
+            }
+
 
     // Verificar stock de camisetas
     $stock = DB::table('inventario_total')

@@ -10,9 +10,11 @@ use App\Models\ParticipanteCorporativa;
 use App\Models\ParticipanteCorporativaTemporal;
 use Illuminate\Support\Facades\DB;
 use App\Models\Categoria;
+use App\Models\InscripcionTipoCorporativa;
 use App\Models\FacturacionCorporativa;
 use App\Imports\ParticipantesCorporativosImport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\helpers\ParticipanteHelper;
 
 class CorporativasController extends Controller
 {
@@ -42,10 +44,6 @@ class CorporativasController extends Controller
             $factura = FacturacionCorporativa::where('inscripcion_id', $p->inscripcion_id)->with('formaPago')->first();
 
             
-            // Simular pago y detalle, en caso de que se use algo similar en el futuro
-            $detalle = null; // No hay detalle definido para corporativas
-            $pago = null;    // No hay pago para corporativas
-
             return (object) [
                 'id' => $p->id,
                 'created_at' => $p->created_at,
@@ -67,10 +65,10 @@ class CorporativasController extends Controller
                 'factura' => 'CORPORATIVAS',
                 'metodo_pago' => $factura->formaPago->metodo_pago ?? 'NO APLICA',
                 'referencia' => $factura->referencia ?? 'ND',
-                'sub_total' => $factura ? number_format($factura->valor / 1.15, 2) : '0.00',
-                'iva' => $factura ? number_format($factura->valor - ($factura->valor / 1.15), 2) : '0.00',
-                'total' => $factura->valor ?? '0.00',
-                'discapacidad' => 'ND',
+                'sub_total' => number_format($p->valor / 1.15, 2),
+                'iva' =>  $p->iva ?? '0.00',
+                'total' => $p->valor ?? '0.00',
+               'discapacidad' => $p->discapacidad == 1 ? 'SI' : 'NO',
             ];
         });
 
@@ -127,12 +125,13 @@ class CorporativasController extends Controller
   
         $data = $request->all();
 
+    
  
             session(['inscripcion_corporativa_id' =>$inscripcionId]);
 
             DB::commit();
-            return redirect()->route('admin.corporativas.resumen')
-            ->with('success', 'Revise el resumen antes de finalizar.');
+            return redirect()->route('admin.corporativas.resumen');
+
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -156,6 +155,7 @@ public function resumen(Request $request)
 
     $inscripcion = InscripcionCorporativa::with('participantesTemporales')->findOrFail($inscripcionId);
      
+    
     
     if (!$inscripcion || $inscripcion->participantesTemporales->isEmpty()) {
         return redirect()->route('inscripciones.create')
@@ -231,32 +231,65 @@ public function finalizar(Request $request)
   
         try {
             // Verificar si ya existe facturación para la inscripción
-          
-          
+                 
 
             DB::beginTransaction();
             
             $temporales = ParticipanteCorporativaTemporal::where('inscripcion_id', $inscripcionId)->get();
                  
             
-            
-            foreach ($temporales as $temp) {
-             $data = $temp->toArray();
-             unset($data['id']); // Eliminar ID para evitar conflictos de duplicado
+   foreach ($temporales as $temp) {
+    $data = $temp->toArray();
+    unset($data['id']); // Eliminar ID para evitar conflictos de duplicado
 
-            $fechaNacimiento = \Carbon\Carbon::parse($data['fecha_nacimiento']);
-            $edad = $fechaNacimiento->age;
+    if (ParticipanteHelper::yaInscrito($data['numero_documento'])) {
+        return redirect()->back()->with('success', 'El participante '.$data['numero_documento']. '  ya está inscrito en otra modalidad.');
+    }
 
-            $categoria = Categoria::where('edad_min', '<=', $edad)
-            ->where(function ($q) use ($edad) {
+
+    // Edad y tercera edad
+    $fechaNacimiento = \Carbon\Carbon::parse($data['fecha_nacimiento']);
+    $edad = $fechaNacimiento->age;
+    $data['tercera_edad'] = $edad >= 65 ? 1 : 0;
+
+    // Discapacidad: convertir a 0 o 1
+    $data['discapacidad'] = (
+        isset($data['discapacidad']) && strtoupper(trim($data['discapacidad'])) === 'SI'
+    ) ? 1 : 0;
+
+    // Categoría
+    $categoria = Categoria::where('edad_min', '<=', $edad)
+        ->where(function ($q) use ($edad) {
             $q->whereNull('edad_max')->orWhere('edad_max', '>=', $edad);
-             })
-            ->first();
-             $data['categoria']=$categoria->nombre;
+        })->first();
+    $data['categoria'] = $categoria->nombre ?? 'SIN CATEGORÍA';
 
-            $participante = ParticipanteCorporativa::create($data);
-             
-            }
+    // Descuento si tercera edad o discapacidad
+    $tipoInscripcion = InscripcionTipoCorporativa::where('id', 1)->first();
+    $valorBase = $tipoInscripcion->valor ?? 0;
+    $aplicaDescuento = $data['tercera_edad'] == 1 || $data['discapacidad'] == 1;
+    $valorFinal = $aplicaDescuento ? $valorBase / 2 : $valorBase;
+
+    // Guardar si tienes campos en tabla
+    $data['valor'] = $valorFinal;
+
+    // Puedes usar $valorFinal para cálculos o guardarlo si es necesario
+    $data['valor']= $valorFinal;
+   
+    $ValorIVA = $valorFinal/ (1 + $tipoInscripcion->iva);
+    $iva=$valorFinal-$ValorIVA;
+    $data['iva']= $iva;
+
+    //fecha
+
+    $data['created_at'] = $temp->created_at;
+    $data['updated_at'] = $temp->updated_at;
+
+ 
+    // Crear participante
+    $participante = ParticipanteCorporativa::create($data);
+}         
+   
             
 
            $participantes = ParticipanteCorporativa::with('tipoInscripcion')
@@ -266,13 +299,13 @@ public function finalizar(Request $request)
                 
 
             $subtotal = $participantes->sum(function ($p) {
-                return $p->tipoInscripcion->valor ?? 0;
+                return $p->valor ?? 0;
             });
 
            
 
             $iva = $participantes->sum(function ($p) {
-                return $p->tipoInscripcion->iva ?? 0;
+                return $p->iva ?? 0;
             });
        
             $data= [
@@ -303,7 +336,7 @@ public function finalizar(Request $request)
                 
              DB::table('inventario_total')
             ->where('talla', $p->talla)
-            ->where('stock_restante', '>', 0)
+          //  ->where('stock_restante', '>', 0)
             ->decrement('stock_restante', 1);
 
          
@@ -317,6 +350,7 @@ public function finalizar(Request $request)
 
     } catch (\Exception $e) {
         DB::rollBack();
+        session()->forget('inscripcion_id');
         return redirect()->back()->with('error', 'Error al finalizar: ' . $e->getMessage());
     }
 }
@@ -326,7 +360,7 @@ public function finalizar(Request $request)
 public function gratuitas(Request $request)
 {
 
-            $request->validate([
+          $request->validate([
            
             'numero_documento' => 'required',
             'razon_social' => 'required',
@@ -334,10 +368,14 @@ public function gratuitas(Request $request)
             'email' => 'required',
             'telefono' => 'required',
             'direccion' => 'required',
-              
+        
+                 
+
+          
         ]);
 
  
+
 ////
     $inscripcionId = session('inscripcion_id');
 
@@ -349,41 +387,78 @@ public function gratuitas(Request $request)
   
         try {
             // Verificar si ya existe facturación para la inscripción
-          
-          
+                 
 
             DB::beginTransaction();
             
             $temporales = ParticipanteCorporativaTemporal::where('inscripcion_id', $inscripcionId)->get();
                  
             
-            
-            foreach ($temporales as $temp) {
-             $data = $temp->toArray();
-             unset($data['id']); // Eliminar ID para evitar conflictos de duplicado
-            $fechaNacimiento = \Carbon\Carbon::parse($data['fecha_nacimiento']);
-            $edad = $fechaNacimiento->age;
+   foreach ($temporales as $temp) {
+    $data = $temp->toArray();
+    unset($data['id']); // Eliminar ID para evitar conflictos de duplicado
+//verificar inscriots
 
-            $categoria = Categoria::where('edad_min', '<=', $edad)
-            ->where(function ($q) use ($edad) {
+
+
+    if (ParticipanteHelper::yaInscrito($data['numero_documento'])) {
+        return redirect()->back()->with('success', 'El participante '.$data['numero_documento']. '  ya está inscrito en otra modalidad.');
+    }
+
+
+    // Edad y tercera edad
+    $fechaNacimiento = \Carbon\Carbon::parse($data['fecha_nacimiento']);
+    $edad = $fechaNacimiento->age;
+    $data['tercera_edad'] = $edad >= 65 ? 1 : 0;
+
+    // Discapacidad: convertir a 0 o 1
+    $data['discapacidad'] = (
+        isset($data['discapacidad']) && strtoupper(trim($data['discapacidad'])) === 'SI'
+    ) ? 1 : 0;
+
+    // Categoría
+    $categoria = Categoria::where('edad_min', '<=', $edad)
+        ->where(function ($q) use ($edad) {
             $q->whereNull('edad_max')->orWhere('edad_max', '>=', $edad);
-             })
-            ->first();
-             $data['categoria']=$categoria->nombre;
+        })->first();
+    $data['categoria'] = $categoria->nombre ?? 'SIN CATEGORÍA';
 
-            
-             $participante = ParticipanteCorporativa::create($data);
-             
-            }
-            
+    // Guardar si tienes campos en tabla
+    $data['valor'] = 0;
 
-            //
+    // Puedes usar $valorFinal para cálculos o guardarlo si es necesario
+    $data['valor']= 0;
+  
+    $data['iva']= 0;
+
+    //fecha
+
+    $data['created_at'] = $temp->created_at;
+    $data['updated_at'] = $temp->updated_at;
+
+ 
+    // Crear participante
+    $participante = ParticipanteCorporativa::create($data);
+}         
+   
+            
 
            $participantes = ParticipanteCorporativa::with('tipoInscripcion')
                 ->where('inscripcion_id', $inscripcionId)
                 ->get();
               
-      
+                
+
+            $subtotal = $participantes->sum(function ($p) {
+                return $p->tipoInscripcion->valor ?? 0;
+            });
+
+           
+
+            $iva = $participantes->sum(function ($p) {
+                return $p->tipoInscripcion->iva ?? 0;
+            });
+       
             $data= [
                 'inscripcion_id'         => $inscripcionId ,
                 'tipo_documento'    => $request->tipo_documento,
@@ -397,20 +472,23 @@ public function gratuitas(Request $request)
                 'valor'                  => 0,
                 'iva'                    => 0,
                 'pagado'                 => 0 ,
-                'forma_pago_id'  => 10,
+                'forma_pago_id'  => 1,
+                'clave_acceso'  =>'00000000GR-'.$inscripcionId.'00000000000',
             ];
 
               // dd($data); 
             $factura =FacturacionCorporativa::create ($data);
 
-        
+     
+            // Actualizar estado de la inscripción
+            InscripcionCorporativa::where('id', $inscripcionId)->update(['estado' => 1]);
 
             // Detalles por participante
             foreach ($participantes as $p) {
                 
              DB::table('inventario_total')
             ->where('talla', $p->talla)
-            ->where('stock_restante', '>', 0)
+          //  ->where('stock_restante', '>', 0)
             ->decrement('stock_restante', 1);
 
          
@@ -424,8 +502,11 @@ public function gratuitas(Request $request)
 
     } catch (\Exception $e) {
         DB::rollBack();
+        session()->forget('inscripcion_id');
         return redirect()->back()->with('error', 'Error al finalizar: ' . $e->getMessage());
     }
+
+
 }
 
 

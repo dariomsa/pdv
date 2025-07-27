@@ -125,13 +125,13 @@ public function index(Request $request)
                 'fecha_nacimiento' => $p->fecha_nacimiento,
                 'talla' => $p->talla,
                 'email' => $p->email,
-                'factura' => 'CORPORATIVAS',
+               'factura' => 'CORPORATIVAS',
                 'metodo_pago' => $factura->formaPago->metodo_pago ?? 'NO APLICA',
                 'referencia' => $factura->referencia ?? 'ND',
-                'sub_total' => $factura ? number_format($factura->valor / 1.15, 2) : '0.00',
-                'iva' => $factura ? number_format($factura->valor - ($factura->valor / 1.15), 2) : '0.00',
-                'total' => $factura->valor ?? '0.00',
-                'discapacidad' => 'ND',
+                'sub_total' => number_format($p->valor / 1.15, 2),
+                'iva' =>  $p->iva ?? '0.00',
+                'total' => $p->valor ?? '0.00',
+               'discapacidad' => $p->discapacidad == 1 ? 'SI' : 'NO',
             ];
         });
 

@@ -10,7 +10,7 @@
 
 
 @if(session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
+    <div class="alert alert-success">{{ session('success')  }}  <a href="/admin/corporativas" >  <button class="btn btn-secondary" >Cancelar Inscripcion  </button></a></div>
 @endif
 
 @if($inscripcion && $participantes->count())
@@ -114,12 +114,15 @@
         </table>
 
         <h5 class="celeste">Forma de pago</h5>
-       <select name="forma_pago" class="form-control w-50">
+       <select name="forma_pago" class="form-control w-50" id="forma_pago_select">
     @foreach ($formasPago as $fp)
-        <option value="{{ $fp->id }}">{{ $fp->metodo_pago }}</option>
+          <option value="{{ $fp->id }}" data-metodo="{{ strtolower($fp->metodo_pago) }}">
+            {{ $fp->metodo_pago }}
+        </option>
     @endforeach
 </select>
-        <div class="form-group w-50">
+</br>
+        <div class="form-group w-50" id="referencia_group">
                 <label>Referencia</label>
              
                       <input type="text" name="referencia" class="form-control" id="">
@@ -182,6 +185,29 @@
             });
         });
     });
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const select = document.getElementById('forma_pago_select');
+    const referenciaGroup = document.getElementById('referencia_group');
+
+    function toggleReferencia() {
+        const selectedOption = select.options[select.selectedIndex];
+        const metodo = selectedOption.getAttribute('data-metodo');
+
+        if (metodo === 'efectivo') {
+            referenciaGroup.style.display = 'none';
+        } else {
+            referenciaGroup.style.display = 'block';
+        }
+    }
+
+    select.addEventListener('change', toggleReferencia);
+
+    // Ejecutar al cargar la página también
+    toggleReferencia();
+});
 </script>
 
 

@@ -54,8 +54,6 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
        
     
     Route::resource('corporativas', 'CorporativasController');
-   
-
 
     
 
@@ -68,3 +66,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
 
 
 });
+
+
+  //Facturacion
+
+  Route::get('/facturar', 'FacturacionController@index')->name('facturar.index');
+  Route::get('/facturar/{corp_id}', 'FacturacionController@show')->name('facturar.show');
+   

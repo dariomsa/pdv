@@ -13,7 +13,10 @@ class InscripcionTipoCorporativa extends Model
     protected $guarded = [];
 
 
-  
+   public function participantes() {
+        return $this->hasMany(ParticipanteCorporativa::class, 'tipo_inscripcion');
+    }
+    
     
 
     

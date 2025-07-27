@@ -3,6 +3,8 @@
 namespace App\Imports;
 
 use App\Models\ParticipanteCorporativaTemporal;
+use App\Models\InventarioTotal;
+use Maatwebsite\Excel\Validators\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -20,7 +22,18 @@ class ParticipantesCorporativosImport implements ToModel, WithHeadingRow, WithVa
     public function model(array $row)
     {
 
-        //  dd('ss');
+         $talla = $row['talla_camiseta'] ?? '';
+    
+    // Validar stock disponible
+        $inventario = InventarioTotal::where('talla', $talla)->first();
+
+        if (!$inventario) {
+        throw new \Exception("No existe inventario para la talla: $talla");
+         }
+
+         if ($inventario->stock_restante <= 0) {
+        throw new \Exception("Sin stock disponible para la talla: $talla");
+         }
         
         return new ParticipanteCorporativaTemporal([
             'inscripcion_id'     => $this->inscripcion_id,
@@ -39,6 +52,7 @@ class ParticipantesCorporativosImport implements ToModel, WithHeadingRow, WithVa
             'provincia'          => $row['provincia'] ?? '',
             'ciudad'             => $row['ciudad'] ?? '',
             'parroquia'          => $row['parroquia'] ?? '',
+            'discapacidad'       => $row['discapacidad'] ?? '',
         ]);
     }
 

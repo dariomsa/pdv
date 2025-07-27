@@ -17,6 +17,7 @@ use App\Models\PagoDetalle;
 use App\Models\Pais;
 use App\Models\FormaPago;
 use Illuminate\Support\Facades\Auth;
+use App\helpers\ParticipanteHelper;
 
 
 class InscripcionesController extends Controller
@@ -104,6 +105,10 @@ class InscripcionesController extends Controller
             'celular' => 'required|string|max:10',
             'talla' => 'required',
         ]);
+
+ if (ParticipanteHelper::yaInscrito($request->numero_documento)) {
+        return redirect()->back()->with('success', 'El participante '.$request->numero_documento. '  ya está inscrito en otra modalidad.');
+    }
 
          // Calcular edad
             $fechaNacimiento = \Carbon\Carbon::parse($request->fecha_nacimiento);

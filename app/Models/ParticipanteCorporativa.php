@@ -12,7 +12,7 @@ class ParticipanteCorporativa extends Model
 
        public function tipoInscripcion()
 {
-   return $this->belongsTo(InscripcionTipo::class, 'tipo_inscripcion');
+   return $this->belongsTo(InscripcionTipoCorporativa::class, 'tipo_inscripcion');
 }
 
 
