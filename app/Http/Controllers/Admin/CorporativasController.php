@@ -244,13 +244,20 @@ public function finalizar(Request $request)
              $data = $temp->toArray();
              unset($data['id']); // Eliminar ID para evitar conflictos de duplicado
 
-            
-             $participante = ParticipanteCorporativa::create($data);
+            $fechaNacimiento = \Carbon\Carbon::parse($data['fecha_nacimiento']);
+            $edad = $fechaNacimiento->age;
+
+            $categoria = Categoria::where('edad_min', '<=', $edad)
+            ->where(function ($q) use ($edad) {
+            $q->whereNull('edad_max')->orWhere('edad_max', '>=', $edad);
+             })
+            ->first();
+             $data['categoria']=$categoria->nombre;
+
+            $participante = ParticipanteCorporativa::create($data);
              
             }
             
-
-            //
 
            $participantes = ParticipanteCorporativa::with('tipoInscripcion')
                 ->where('inscripcion_id', $inscripcionId)
@@ -354,6 +361,15 @@ public function gratuitas(Request $request)
             foreach ($temporales as $temp) {
              $data = $temp->toArray();
              unset($data['id']); // Eliminar ID para evitar conflictos de duplicado
+            $fechaNacimiento = \Carbon\Carbon::parse($data['fecha_nacimiento']);
+            $edad = $fechaNacimiento->age;
+
+            $categoria = Categoria::where('edad_min', '<=', $edad)
+            ->where(function ($q) use ($edad) {
+            $q->whereNull('edad_max')->orWhere('edad_max', '>=', $edad);
+             })
+            ->first();
+             $data['categoria']=$categoria->nombre;
 
             
              $participante = ParticipanteCorporativa::create($data);
@@ -455,6 +471,16 @@ public function linkpago(Request $request)
             foreach ($temporales as $temp) {
              $data = $temp->toArray();
              unset($data['id']); // Eliminar ID para evitar conflictos de duplicado
+            
+             $fechaNacimiento = \Carbon\Carbon::parse($data['fecha_nacimiento']);
+            $edad = $fechaNacimiento->age;
+
+            $categoria = Categoria::where('edad_min', '<=', $edad)
+            ->where(function ($q) use ($edad) {
+            $q->whereNull('edad_max')->orWhere('edad_max', '>=', $edad);
+             })
+            ->first();
+             $data['categoria']=$categoria->nombre;
 
             
              $participante = ParticipanteCorporativa::create($data);
@@ -492,27 +518,12 @@ public function linkpago(Request $request)
                 'nota_adicional'       => $request->nota_adicional,
                 'valor'                  => $subtotal,
                 'iva'                    => $iva,
-                'pagado'                 => 1 ,
                 'forma_pago_id'  => $request->forma_pago,
             ];
 
               // dd($data); 
             $factura =FacturacionCorporativa::create ($data);
 
-     
-            // Actualizar estado de la inscripción
-            InscripcionCorporativa::where('id', $inscripcionId)->update(['estado' => 1]);
-
-            // Detalles por participante
-            foreach ($participantes as $p) {
-                
-             DB::table('inventario_total')
-            ->where('talla', $p->talla)
-            ->where('stock_restante', '>', 0)
-            ->decrement('stock_restante', 1);
-
-         
-            }
 
 
         DB::commit();

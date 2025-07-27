@@ -31,12 +31,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     Route::post('inscripciones_gratuitas/resumen', 'InscripcionesGratuitaController@resumen')->name('inscripciones_gratuitas.resumen');
     Route::post('inscripciones_gratuitas/finalizar', 'InscripcionesGratuitaController@finalizar')->name('inscripciones_gratuitas.finalizar');
 
-    
-    Route::delete('inscripciones/destroy', 'ParticipanteController@massDestroy')->name('participantes.destroy');
-	//Route::resource('participantes', 'ParticipanteController'::class);
-     
+   Route::resource('participantes', 'ParticipanteController'::class);
 
-    	//Cierre de Caja
+  
+    //Cierre de Caja
 	Route::resource('cierrecaja', 'CierreCajaController');
     	//Cierre de Caja
 	Route::resource('cajadetalle', 'CajaDetalleController');
@@ -44,7 +42,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
   	// Reporte de Ventas Generales
 	Route::resource('reporteventasgenerales', 'ReporteVentasGeneralesController');
   	// Reporte de Ventas Diarias
-	Route::resource('reporteventasdiarias', 'ReporteVentasDiariasController');
+
   
       
 	 // Corporativas
@@ -64,6 +62,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     //Parametros
 
     Route::get('/parametros', 'ParametrosController@index')->name('parametros.index');
+    Route::post('/categoria/por-fecha', 'CategoriaController@obtenerPorFechaNacimiento')->name('categoria.porFecha');
+
 
 
 

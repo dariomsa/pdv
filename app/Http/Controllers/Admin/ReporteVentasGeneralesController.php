@@ -23,20 +23,21 @@ class ReporteVentasGeneralesController extends Controller
      * @return \Illuminate\Http\Response
      */
 
-    public function index(Request $request)
+public function index(Request $request)
 {
     $fecha_desde = $request->input('fecha_desde') ?? date('Y-m-d');
     $fecha_hasta = $request->input('fecha_hasta') ?? date('Y-m-d');
 
+    // Participantes normales
     $participantesNormales = Participante::with(['tipoInscripcion', 'creador'])
-        ->whereBetween('created_at', [$fecha_desde . ' 00:00:00', $fecha_hasta . ' 23:59:59'])
+        ->whereBetween('created_at', ["$fecha_desde 00:00:00", "$fecha_hasta 23:59:59"])
         ->get()
         ->map(function ($p) {
             $factura = Facturacion::where('inscripcion_id', $p->inscripcion_id)->first();
             $detalle = FacturacionDetalle::where('participante_id', $p->id)->first();
             $pago = PagoDetalle::where('participante_id', $p->id)->with('formaPago')->first();
 
-            return (object)[
+            return [
                 'id' => $p->id,
                 'created_at' => $p->created_at,
                 'factura_numero' => $factura ? substr($factura->clave_acceso, 0, 15) : 'ND',
@@ -64,11 +65,12 @@ class ReporteVentasGeneralesController extends Controller
             ];
         });
 
+    // Participantes gratuitos
     $participantesGratuitos = ParticipanteGratuita::with(['tipoInscripcion', 'creador'])
-        ->whereBetween('created_at', [$fecha_desde . ' 00:00:00', $fecha_hasta . ' 23:59:59'])
+        ->whereBetween('created_at', ["$fecha_desde 00:00:00", "$fecha_hasta 23:59:59"])
         ->get()
         ->map(function ($p) {
-            return (object)[
+            return [
                 'id' => $p->id,
                 'created_at' => $p->created_at,
                 'factura_numero' => 'GRATUITO',
@@ -96,18 +98,21 @@ class ReporteVentasGeneralesController extends Controller
             ];
         });
 
-         $corporativos = ParticipanteCorporativa::with(['tipoInscripcion', 'creador'])
-        ->whereBetween('created_at', [$fecha_desde . ' 00:00:00', $fecha_hasta . ' 23:59:59'])
+    // Participantes corporativos
+    $corporativos = ParticipanteCorporativa::with(['tipoInscripcion', 'creador'])
+        ->whereBetween('created_at', ["$fecha_desde 00:00:00", "$fecha_hasta 23:59:59"])
         ->get()
         ->map(function ($p) {
-         $factura = FacturacionCorporativa::where('inscripcion_id', $p->inscripcion_id)->with('formaPago')->first();
+            $factura = FacturacionCorporativa::where('inscripcion_id', $p->inscripcion_id)
+                ->with('formaPago')
+                ->first();
 
-                  return (object)[
+            return [
                 'id' => $p->id,
                 'created_at' => $p->created_at,
                 'factura_numero' => $factura ? substr($factura->clave_acceso, 0, 15) : 'ND',
                 'empresa_factura' => $factura->empresa ?? 'ND',
-                'telefono_factura' => $factura->telefono?? 'ND',
+                'telefono_factura' => $factura->telefono ?? 'ND',
                 'origen' => $p->creador->name ?? 'ND',
                 'tipoInscripcion' => $p->tipoInscripcion,
                 'tipo_documento' => $p->tipo_documento,
@@ -130,12 +135,18 @@ class ReporteVentasGeneralesController extends Controller
             ];
         });
 
-    $data = $participantesNormales->merge($participantesGratuitos)->merge($corporativos);
+        
 
-   // dd($data);
+    // Convertir a colecciones y combinar
+    $data = collect($participantesNormales)
+        ->merge($participantesGratuitos)
+        ->merge($corporativos);
+
+
 
     return view('reportes.ventas_generales', compact('data', 'fecha_desde', 'fecha_hasta'));
 }
+
 
 
     /**

@@ -135,14 +135,7 @@
                     </a>
                     <ul class="nav-dropdown-items">
                         @can('ventas_diarias_access')
-                            <li class="nav-item">
-                                <a href="{{ route("admin.reporteventasdiarias.index") }}" class="nav-link {{ request()->is('admin/permissions') || request()->is('admin/permissions/*') ? 'active' : '' }}">
-                                    <i class="fa-fw fas fa-unlock-alt nav-icon">
-
-                                    </i>
-                                    Ventas Diarias
-                                </a>
-                            </li>
+                           
                         @endcan
                       
                         @can('ventas_generales_access')

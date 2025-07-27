@@ -56,6 +56,7 @@
                                     <form action="{{ route('admin.participantes.destroy', $p->id) }}" method="POST" onsubmit="return confirm('¿Eliminar este participante?')">
                                         @csrf
                                         @method('DELETE')
+                                        
                                         <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
                                     </form>
                                 </td>
@@ -106,13 +107,13 @@
                 <div class="form-row">
                     <div class="form-group col-md-6">
                         <label for="nombres">Nombres</label>
-                        <input type="text" class="form-control" name="nombres" required>
+                        <input   autocomplete="off" type="text" class="form-control" name="nombres" required>
 							<div class="valid-feedback">Correcto</div>
 							<div class="invalid-feedback">* Requerido</div>
                     </div>
                     <div class="form-group col-md-6">
                         <label for="apellidos">Apellidos</label>
-                        <input type="text" class="form-control" name="apellidos" required>
+                        <input  autocomplete="off" type="text" class="form-control" name="apellidos" required>
                         <div class="valid-feedback">Correcto</div>
 							<div class="invalid-feedback">* Requerido</div>
                     </div>
@@ -142,7 +143,7 @@
                     </div>
   <div class="form-group col-md-3">
                     <label for="categoria">Categoría</label>
-                    <input type="text" class="form-control" name="categoria" readonly>
+                    <input type="text" class="form-control" name="categoria"  readonly id="categoria_output">
                 </div>
 
                 </div>
@@ -193,19 +194,19 @@
                 <div class="form-row">
                     <div class="form-group col-md-4">
                         <label for="direccion">Dirección</label>
-                        <input type="text" class="form-control" name="direccion" required>
+                        <input  autocomplete="off" type="text" class="form-control" name="direccion" required>
                     </div>
                     <div class="form-group col-md-3">
                         <label for="provincia">Provincia</label>
-                        <input type="text" class="form-control" name="provincia" required>
+                        <input  autocomplete="off" type="text" class="form-control" name="provincia" required>
                     </div>
                     <div class="form-group col-md-3">
                         <label for="ciudad">Ciudad</label>
-                        <input type="text" class="form-control" name="ciudad" required>
+                        <input  autocomplete="off" type="text" class="form-control" name="ciudad" required>
                     </div>
                     <div class="form-group col-md-2">
                     <label for="parroquia">Parroquia</label>
-                    <input type="text" class="form-control" name="parroquia" required>
+                    <input  autocomplete="off" type="text" class="form-control" name="parroquia" required>
                 </div>
                 </div>
                 
@@ -214,7 +215,7 @@
                 <div class="form-row">
                     <div class="form-group col-md-6">
                         <label for="emergencia_nombre">Nombre</label >
-                        <input type="text" class="form-control" name="emergencia_nombre" required>
+                        <input  autocomplete="off"  type="text" class="form-control" name="emergencia_nombre" required>
                     </div>
                     <div class="form-group col-md-6">
                         <label for="emergencia_celular">Celular</label>
@@ -270,7 +271,6 @@
 
   
 </div>	
-<script src="{{ asset('js/sweetalert2.all.min.js') }}"></script>
 
 
   <script>
@@ -284,26 +284,7 @@
 			document.getElementById('num_referencia').disabled = true;
 		}
     };
-	
-	function cerrar()  {
-	  event.preventDefault();
 
-		Swal.fire({
-		title: '¿Está seguro de crear y factura inscripción?',
-		type: 'warning',
-		showCancelButton: true,
-		confirmButtonText: 'Si',
-		cancelButtonText: "No",
-		confirmButtonColor: '#3085d6',
-		cancelButtonColor: '#d33',
-	  }).then((result) => {
-		if (result.value) {
-	   $('#sc_form').submit();
-		}
-		return false;
-	  })
-	};
-	
 	function DatosFactura()  {
 		
 		if( $('#confirmar').is(':checked') ){
@@ -427,5 +408,37 @@ $(function () {
 $("#fecha").datepicker();
 });
 </script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const inputFecha = document.querySelector('[name="fecha_nacimiento"]');
+    const categoriaOutput = document.getElementById('categoria_output');
+
+    inputFecha.addEventListener('change', function () {
+        const fecha = this.value;
+        if (!fecha) return;
+
+        fetch('/admin/categoria/por-fecha', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ fecha_nacimiento: fecha })
+        })
+        .then(res => res.json())
+        .then(data => {
+          console.log(data);
+            if (data.categoria) {
+                categoriaOutput.value = data.categoria;
+            } else {
+                categoriaOutput.value = 'Sin categoría';
+            }
+        });
+    });
+});
+</script>
+
 @endsection
 

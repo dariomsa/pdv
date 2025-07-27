@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'site_title' => 'Expense Manager',
+    'site_title' => 'Racevents',
 ];

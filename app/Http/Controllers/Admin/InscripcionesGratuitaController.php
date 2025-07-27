@@ -27,26 +27,22 @@ class InscripcionesGratuitaController extends Controller
 
 
 
-public function index(Request $request)
+
+
+    public function index(Request $request)
 {
-    
     session()->forget('inscripcion_id');
 
     $fecha_desde = $request->input('fecha_desde', date('Y-m-d'));
     $fecha_hasta = $request->input('fecha_hasta', date('Y-m-d'));
 
-    $participantes = ParticipanteGratuita::with('tipoInscripcion')
+    $participantes = ParticipanteGratuita::with('tipoInscripcion', 'creador')
         ->when(!tieneRol('Administrador_oficina'), function ($query) {
             $query->where('created_by_id', Auth::id());
         })
-        ->when($request->filled('fecha_desde'), function ($query) use ($fecha_desde) {
-            $query->whereDate('created_at', '>=', $fecha_desde);
-        })
-        ->when($request->filled('fecha_hasta'), function ($query) use ($fecha_hasta) {
-            $query->whereDate('created_at', '<=', $fecha_hasta);
-        })
+        ->whereBetween('created_at', ["$fecha_desde 00:00:00", "$fecha_hasta 23:59:59"])
         ->get()
-        ->map(function ($p) {
+          ->map(function ($p) {
             return (object) [
                 'id' => $p->id,
                 'created_at' => $p->created_at,
@@ -74,7 +70,6 @@ public function index(Request $request)
 
     return view('inscripciones_gratuitas.index', compact('participantes', 'fecha_desde', 'fecha_hasta'));
 }
-
 
     public function create(Request $request)
     {
@@ -230,7 +225,7 @@ public function finalizar(Request $request)
              unset($data['id']); // Eliminar ID para evitar conflictos de duplicado
              $participante = ParticipanteGratuita::create($data);
 
-             dd($participante);
+
 
             // descontar stock
             DB::table('inventario_total')

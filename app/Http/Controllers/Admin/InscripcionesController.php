@@ -92,7 +92,6 @@ class InscripcionesController extends Controller
         return redirect()->route('login')->with('error', 'Debe iniciar sesión para realizar la inscripción.');
         }
 
-
         $request->validate([
             'tipo_inscripcion' => 'required|integer',
             'tipo_documento' => 'required|string',
@@ -102,8 +101,8 @@ class InscripcionesController extends Controller
             'genero' => 'required|string',
             'fecha_nacimiento' => 'required|date',
             'nacionalidad' => 'required|string',
-             'celular' => 'required|string|max:10',
-             'talla' => 'required',
+            'celular' => 'required|string|max:10',
+            'talla' => 'required',
         ]);
 
          // Calcular edad
@@ -119,7 +118,6 @@ class InscripcionesController extends Controller
         $stock = DB::table('inventario_total')
         ->where('talla', $request->talla)
         ->value('stock_restante');
-
 
      
         if ($stock <= 0) {
@@ -149,11 +147,7 @@ class InscripcionesController extends Controller
             }
 			
 			  
-
             $data = $request->all();
-
-
-
             // Buscar categoría por edad
             $categoria = Categoria::where('edad_min', '<=', $edad)
                 ->where(function ($q) use ($edad) {
@@ -203,13 +197,17 @@ public function resumen(Request $request)
             ->where('inscripcion_id', $inscripcionId)
             ->get();
 
-            //dd( $participantes);
 
     $primer = $participantes->first();
     $subtotal = 0;
         $iva_total = 0;
         foreach ($participantes as $p) {
-            $valor = $p->tipoInscripcion->valor ?? 0;
+            $valor = $p->tipoInscripcion->valor;
+            //tercera_edad
+            if($p->tercera_edad==1)
+            {
+                $valor= $valor/2;
+            }    
             $iva=$valor-($valor/(1+$p->tipoInscripcion->iva));
             $valor=$valor-$iva;
             $subtotal += $valor;
@@ -264,9 +262,9 @@ public function finalizar(Request $request)
             DB::beginTransaction();
             
             $temporales = ParticipanteTemporal::where('inscripcion_id', $inscripcionId)->get();
-            $facturaTipo = $temporales->count() > 1 ? 'Mult' : 'Ind';    
-
-               
+            $facturaTipo = $temporales->count() > 1 ? 'Mult' : 'Ind';   
+            
+                   
             foreach ($temporales as $temp) {
              $data = $temp->toArray();
              $data['factura'] = $facturaTipo;
@@ -275,22 +273,19 @@ public function finalizar(Request $request)
             }
 
            
-            $participantes = Participante::with('tipoInscripcion')
-                ->where('inscripcion_id', $inscripcionId)
-                ->get();
-              
+           $participantes = Participante::with('tipoInscripcion')
+            ->where('inscripcion_id', $inscripcionId)
+            ->get();
 
-                          $subtotal = $participantes->sum(function ($p) {
-                return $p->tipoInscripcion->valor ?? 0;
+            $subtotal = $participantes->sum(function ($p) {
+            $valor = $p->tipoInscripcion->valor ?? 0;
+            return $p->tercera_edad == 1 ? $valor / 2 : $valor;
             });
 
             $iva = $participantes->sum(function ($p) {
-                return $p->tipoInscripcion->iva ?? 0;
+            $iva = $p->tipoInscripcion->iva ?? 0;
+            return $p->tercera_edad == 1 ? $iva / 2 : $iva;
             });
-
-
-             
-            
 
             // Crear factura
             $factura =Facturacion::create ([
@@ -311,7 +306,6 @@ public function finalizar(Request $request)
             
 
               // Crear pago principal
-             //   dd($factura);
 
             $pagoPrincipal = Pago::create ([
             'inscripcion_id'  => $inscripcionId,
@@ -319,20 +313,17 @@ public function finalizar(Request $request)
             'pago_id'         => $request->forma_pago,
             'total'           => $subtotal,
             'referencia'      => $request->referencia ?? null,
-            
             'estado'          => 'PAGADO' // o 'PENDIENTE' si no está confirmado
             ]);
 
-                
-
-            
-            // Actualizar estado de la inscripción
+             // Actualizar estado de la inscripción
             Inscripcion::where('id', $inscripcionId)->update(['estado' => 1]);
 
             // Detalles por participante
             foreach ($participantes as $p) {
                 
-                $valor = $p->tipoInscripcion->valor ?? 0;
+            $valor = ($p->tipoInscripcion->valor ?? 0) * ($p->tercera_edad == 1 ? 0.5 : 1);
+
                 $detalle=FacturacionDetalle::create([
                     'facturacion_id' => $factura->id,
                     'participante_id' => $p->id,
@@ -340,10 +331,6 @@ public function finalizar(Request $request)
                     'pagado' => 0
                     
                 ]);
-
-
-              
-                    
 
                 $pago=PagoDetalle::create([
                 'participante_id' => $p->id,
@@ -355,8 +342,6 @@ public function finalizar(Request $request)
                 'created_by_id'   => auth()->id(),
             ]);
 
-
-             // dd(   $pago);
             //descontar stock
 
             DB::table('inventario_total')
