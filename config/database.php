@@ -48,7 +48,7 @@ return [
             'url' => env('DATABASE_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
-            'database' => 'pds_version2025',
+            'database' => 'puntodeventa_2026',
             'username' => 'pds',
             'password' => 'Race2o25#456',
             'unix_socket' => env('DB_SOCKET', ''),

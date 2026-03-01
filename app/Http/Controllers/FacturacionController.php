@@ -25,6 +25,8 @@ public function index()
         })
         ->limit(5)->get();
 
+
+//dd(  $facturas);
       
 
     if ($facturas->isEmpty()) {
@@ -70,7 +72,7 @@ public function index()
             "items" => [[
                 "codigo_principal" => "003",
                 "codigo_auxiliar" => null,
-                "descripcion" => "Inscripciones Quito 15Krace 2025",
+                "descripcion" => "INSCRIPCIONES QUITO 15K-  21K 2026",
                 "tipoproducto" => 2,
                 "tipo_iva" => 4,
                 "precio_unitario" => $precio_unitario,
@@ -174,7 +176,7 @@ public function show($id)
         "items" => [[
             "codigo_principal" => "003",
             "codigo_auxiliar" => null,
-            "descripcion" => "Inscripciones Corporativas Carrera Quito15K Adidas 2025",
+            "descripcion" => "INSCRIPCIONES CORPORATIVAS QUITO 15K-  21K 2026",
             "tipoproducto" => 2,
             "tipo_iva" => 4,
             "precio_unitario" => $precio_unitario,
@@ -217,7 +219,7 @@ public function show($id)
             Log::error("Error al enviar factura #{$facturacion->id}: " . $e->getMessage());
         }
 
-            dd('end corporativas');
+           echo 'factura exitosa';
 
 
 }

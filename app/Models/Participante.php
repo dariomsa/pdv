@@ -36,6 +36,7 @@ class Participante extends Model
     'corral',
     'tercera_edad',
     'discapacidad',
+	'sub_tipo',
     'emergencia_nombre',
     'emergencia_celular',
     'factura',

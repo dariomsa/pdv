@@ -17,6 +17,18 @@
                     <label><small>FECHA HASTA</small></label>
                     <input type="date" name="fecha_hasta" class="form-control" value="{{ $fecha_hasta }}">
                 </div>
+				
+				   <div class="col-12 col-md-2">
+        <label><small>CARRERA</small></label>
+        <select name="carrera" class="form-control">
+            <option value="">-- Todas --</option>
+             <option value="1" {{ (isset($carrera) && $carrera == '1') ? 'selected' : '' }}>Quito 15K Race</option>
+            <option value="2" {{ (isset($carrera) && $carrera == '2') ? 'selected' : '' }}>Quito 21K Race</option>
+			<option value="3" {{ (isset($carrera) && $carrera == '3') ? 'selected' : '' }}>Mini 5K Race</option>
+        </select>
+    </div>
+	
+	
                 <div class="col-4">
                     <label class="control-label">&nbsp;</label><br>
                     <button class="btn btn-primary" type="submit">Filtrar</button>
@@ -32,7 +44,9 @@
                         <th>Fecha</th>
                         <th>Número de Factura</th>
                         <th>Empresa / Factura</th>
-                        <th>Teléfono</th>
+					
+                        <th>Celular Part.</th>
+							 <th>Nota</th>
                         <th>Origen</th>
                         <th>Tipo de Inscripción</th>
                         <th>Tipo de Documento</th>
@@ -60,7 +74,8 @@
                             <td>{{ $item['created_at'] }}</td>
                             <td>{{ $item['factura_numero'] }}</td>
                             <td>{{ $item['empresa_factura'] }}</td>
-                            <td>{{ $item['telefono_factura'] }}</td>
+                            <td>{{ $item['telefono_factura'] }}</td>   
+							<td>{{ $item['nota_facturacion'] }}</td>
                             <td>{{ $item['origen'] }}</td>
                             <td>{{ $item['tipoInscripcion']['nombre'] ?? 'ND' }}</td>
                             <td>{{ $item['tipo_documento'] }}</td>

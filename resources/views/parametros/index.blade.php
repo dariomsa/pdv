@@ -55,15 +55,42 @@
         </tbody>
     </table>
 
+<h5 class="celeste">Inventario Total</h5>
 
-                <h5 class="celeste" >Inventario Total</h5>
-    <table class="table table-bordered">
-        <thead><tr><th>ID</th><th>Talla</th><th>Total</th><th>Restante</th></tr></thead>
-        <tbody>
-            @foreach($inventario as $item)
-            <tr><td>{{ $item->id }}</td><td>{{ $item->talla }}</td><td>{{ $item->stock_total }}</td><td>{{ $item->stock_restante }}</td></tr>
-            @endforeach
-        </tbody>
-    </table>
+<table class="table table-bordered table-striped">
+    <thead class="thead-dark">
+        <tr>
+            <th>ID</th>
+            <th>Carrera</th>
+            <th>Género</th>
+            <th>Talla</th>
+            <th>Total</th>
+            <th>Restante</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($inventario as $item)
+        <tr>
+            <td>{{ $item->id }}</td>
+
+            {{-- Nombre de la carrera --}}
+         <td>{{ $item->carrera_nombre }}</td>
+
+            {{-- Género formateado --}}
+            <td>
+                {{ $item->genero }}
+            </td>
+
+            <td>{{ $item->talla }}</td>
+            <td>{{ $item->stock_total }}</td>
+            <td>
+                <strong class="{{ $item->stock_restante <= 10 ? 'text-danger' : '' }}">
+                    {{ $item->stock_restante }}
+                </strong>
+            </td>
+        </tr>
+        @endforeach
+    </tbody>
+</table>
 
 @endsection

@@ -82,36 +82,36 @@
             </div>
             <div class="form-group col-md-3">
                 <label>Documento</label>
-                <input type="text" name="numero_doc_facturacion" class="form-control" id="documento_fact" value="{{ old('documento', $primer->numero_documento ?? '') }}">
+                <input type="text" name="numero_doc_facturacion" class="form-control" id="documento_fact" value="">
             </div>
             <div class="form-group col-md-3">
                 <label>Nombre</label>
-                <input type="text" name="nombre_facturacion" class="form-control" id="nombre_fact" value="{{ old('nombre', $primer->nombres ?? '') }}">
+                <input type="text" name="nombre_facturacion" class="form-control" id="nombre_fact" value="">
             </div>
             <div class="form-group col-md-3">
                 <label>Apellido</label>
-                <input type="text" name="apellido_facturacion" class="form-control" id="apellido_fact" value="{{ old('apellido', $primer->apellidos ?? '') }}">
+                <input type="text" name="apellido_facturacion" class="form-control" id="apellido_fact" value="">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group col-md-4">
                 <label>Email</label>
-                <input type="email" name="email_facturacion" class="form-control" id="email_fact" value="{{ old('email', $primer->email ?? '') }}">
+                <input type="email" name="email_facturacion" class="form-control" id="email_fact" value="">
             </div>
             <div class="form-group col-md-4">
                 <label>Celular</label>
-                <input type="text" name="telefono_facturacion" class="form-control" id="celular_fact" value="{{ old('celular', $primer->celular ?? '') }}">
+                <input type="text" name="telefono_facturacion" class="form-control" id="celular_fact" value="">
             </div>
             <div class="form-group col-md-4">
                 <label>Dirección</label>
-                <input type="text" name="direccion_facturacion" class="form-control" id="direccion_fact" value="{{ old('direccion', $primer->direccion ?? '') }}">
+                <input type="text" name="direccion_facturacion" class="form-control" id="direccion_fact" value="">
             </div>
         </div>
 
         <div class="form-group">
             <label>Nota Adicional</label>
-            <textarea name="nota_facturacion" class="form-control" rows="2">{{ old('nota') }}</textarea>
+            <textarea name="nota_facturacion" class="form-control" rows="2"></textarea>
         </div>  
     
     </div>

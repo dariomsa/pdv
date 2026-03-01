@@ -1,27 +1,34 @@
 <?php
 
-Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin', 'middleware' => ['auth:api']], function () {
-    // Permissions
-    Route::apiResource('permissions', 'PermissionsApiController');
+header('Access-Control-Allow-Origin:  *');
+header('Access-Control-Allow-Methods:  POST, GET, OPTIONS, PUT, PATCH, DELETE');
+header('Access-Control-Allow-Headers: Accept, Content-Type, X-Auth-Token, Origin, Authorization');
+
+
+
+Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin'], function () {
+
+      // Permissions
+  //  Route::apiResource('permissions', 'PermissionsApiController');
 
     // Roles
-    Route::apiResource('roles', 'RolesApiController');
+  //  Route::apiResource('roles', 'RolesApiController');
 
     // Users
-    Route::apiResource('users', 'UsersApiController');
+  //  Route::apiResource('users', 'UsersApiController');
 
-    // Expensecategories
+    // Inscripciones
+   // Route::apiResource('inscripciones', 'InscripcionesApiController');
+//    Route::post('inscripciones', 'InscripcionesApiController@inscritos');
+
+      Route::post('inscripciones_insert', 'InscripcionNormalApiController@inscripciones_insert');
+      Route::post('/verificar-inscripcion', 'InscripcionNormalApiController@verificar');
 
 
-    // Incomecategories
-
-
-    // Expenses
-
-
-    // Incomes
+      
 
 
     // Expensereports
-
+   // Route::apiResource('expense-reports', 'ExpenseReportApiController');
 });
+

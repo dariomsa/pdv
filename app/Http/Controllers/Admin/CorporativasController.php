@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\FormaPago;
 use App\Models\InscripcionCorporativa;
 use App\Models\ParticipanteCorporativa;
+
+use App\Models\Participante;
+
 use App\Models\ParticipanteCorporativaTemporal;
 use Illuminate\Support\Facades\DB;
 use App\Models\Categoria;
@@ -15,6 +18,9 @@ use App\Models\FacturacionCorporativa;
 use App\Imports\ParticipantesCorporativosImport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\helpers\ParticipanteHelper;
+use Session;
+use Illuminate\Support\Facades\Http;
+
 
 class CorporativasController extends Controller
 {
@@ -25,55 +31,303 @@ class CorporativasController extends Controller
      */
 
 
-    public function index()
+public function index(Request $request)
+    {
+        session()->forget('inscripcion_id');
+
+        $hoy = date('Y-m-d');
+
+        $fecha_desde = $request->filled('fecha_desde') ? $request->fecha_desde : $hoy;
+        $fecha_hasta = $request->filled('fecha_hasta') ? $request->fecha_hasta : $hoy;
+
+        // Nuevo: carrera (15K / 21K) -> en corporativas también filtra por tipo_inscripcion
+        $carrera = $request->input('carrera'); // puede venir null/vacío
+
+        $participantes = ParticipanteCorporativa::with(['tipoInscripcion', 'creador'])
+           
+            // Filtro por carrera solo si viene seleccionada
+            ->when(!empty($carrera), function ($query) use ($carrera) {
+                $query->where('tipo_inscripcion', $carrera);
+            })
+            ->whereDate('created_at', '>=', $fecha_desde)
+            ->whereDate('created_at', '<=', $fecha_hasta)
+            ->get()
+            ->map(function ($p) {
+
+                // Factura corporativa (si existe)
+                $factura = FacturacionCorporativa::where('inscripcion_id', $p->inscripcion_id)
+                    ->with('formaPago')
+                    ->first();
+
+                return (object)[
+                    'id' => $p->id,
+                    'created_at' => $p->created_at,
+
+                    'factura_numero' => $factura ? substr($factura->clave_acceso, 24, 15) : 'ND',
+                    'empresa_factura' => $factura->empresa ?? 'ND',
+                    'telefono_factura' => $factura->telefono ?? 'ND',
+
+                    'origen' => $p->creador->name ?? 'ND',
+                    'tipoInscripcion' => $p->tipoInscripcion,
+
+                    'tipo_documento' => $p->tipo_documento,
+                    'numero_documento' => $p->numero_documento,
+                    'nombres' => $p->nombres,
+                    'apellidos' => $p->apellidos,
+                    'genero' => $p->genero,
+					
+					  'inscripcion_id' => $p->inscripcion_id,
+
+                    'corral' => $p->corral,
+                    'categoria' => $p->categoria,
+                    'fecha_nacimiento' => $p->fecha_nacimiento,
+                    'talla' => $p->talla,
+                    'email' => $p->email,
+					
+					'certificado' => $p->certificado,
+
+                    'factura' => 'CORPORATIVAS',
+
+                    'metodo_pago' => $factura->formaPago->metodo_pago ?? 'NO APLICA',
+                    'referencia' => $factura->referencia ?? 'ND',
+
+                    'sub_total' => $p->valor !== null ? number_format($p->valor / 1.15, 2) : '0.00',
+                    'iva' => $p->iva ?? '0.00',
+                    'total' => $p->valor ?? '0.00',
+
+                    'discapacidad' => ($p->discapacidad == 1) ? 'SI' : 'NO',
+                ];
+            });
+			
+			//dd( $participantes);
+
+        return view('corporativas.index', compact('participantes', 'fecha_desde', 'fecha_hasta', 'carrera'));
+    }
+	
+	
+
+public function marcarCertificado(Request $request, $id)
 {
-    session()->forget('inscripcion_id');
-    $fecha_desde = request('fecha_desde') ?? date('Y-m-d');
-    $fecha_hasta = request('fecha_hasta') ?? date('Y-m-d');
+	
+	
+    try {
+        DB::beginTransaction();
 
-    $participantes = ParticipanteCorporativa::with(['tipoInscripcion', 'creador'])
-        ->when(request()->filled('fecha_desde'), function ($query) {
-            $query->whereDate('created_at', '>=', request('fecha_desde'));
-        })
-        ->when(request()->filled('fecha_hasta'), function ($query) {
-            $query->whereDate('created_at', '<=', request('fecha_hasta'));
-        })
-        ->get()
-        ->map(function ($p) {
-            // Obtener factura si existe
-            $factura = FacturacionCorporativa::where('inscripcion_id', $p->inscripcion_id)->with('formaPago')->first();
+        // 1️⃣ Obtener todos los participantes de la inscripción
+        $participantes = ParticipanteCorporativa::where('inscripcion_id', $id)->get();
 
-            
-            return (object) [
-                'id' => $p->id,
-                'created_at' => $p->created_at,
-                'factura_numero' => $factura ? substr($factura->clave_acceso, 0, 15) : 'ND',
-                'empresa_factura' => $factura->empresa ?? 'ND',
-                'telefono_factura' => $factura->telefono ?? 'ND',
-                'origen' => $p->creador->name ?? 'ND',
-                'tipoInscripcion' => $p->tipoInscripcion,
-                'tipo_documento' => $p->tipo_documento,
-                'numero_documento' => $p->numero_documento,
-                'nombres' => $p->nombres,
-                'apellidos' => $p->apellidos,
-                'genero' => $p->genero,
-                'corral' => 'ND',
-                'categoria' => $p->categoria,
-                'fecha_nacimiento' => $p->fecha_nacimiento,
-                'talla' => $p->talla,
-                'email' => $p->email,
-                'factura' => 'CORPORATIVAS',
-                'metodo_pago' => $factura->formaPago->metodo_pago ?? 'NO APLICA',
-                'referencia' => $factura->referencia ?? 'ND',
-                'sub_total' => number_format($p->valor / 1.15, 2),
-                'iva' =>  $p->iva ?? '0.00',
-                'total' => $p->valor ?? '0.00',
-               'discapacidad' => $p->discapacidad == 1 ? 'SI' : 'NO',
-            ];
-        });
+        if ($participantes->isEmpty()) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'No existen participantes para esta inscripción.'
+            ], 404);
+        }
 
-    return view('corporativas.index', compact('participantes', 'fecha_desde', 'fecha_hasta'));
+        // 2️⃣ Armar JSON para el API (estructura del primer API)
+ $payload = [
+    'inscripcion_id' => (int) $id,
+    'created_by_id' => (int) $participantes->first()->created_by_id,
+    'participantes' => $participantes->map(function ($p) {
+        return [
+            'tipo_inscripcion' => (int) $p->tipo_inscripcion,
+            'tipo_documento' => $p->tipo_documento,
+            'numero_documento' => $p->numero_documento,
+            'nombres' => $p->nombres,
+            'apellidos' => $p->apellidos,
+            'nacionalidad' => $p->nacionalidad,
+            'genero' => $p->genero,
+            'fecha_nacimiento' => $p->fecha_nacimiento,
+            'categoria' => $p->categoria,
+            'talla' => $p->talla,
+            'celular' => $p->celular,
+            'email' => $p->email,
+            'direccion' => $p->direccion,
+            'provincia' => $p->provincia,
+            'ciudad' => $p->ciudad,
+            'parroquia' => $p->parroquia,
+            'corral' => $p->corral,
+            'tercera_edad' => (int) ($p->tercera_edad ?? 0),
+            'discapacidad' => (int) ($p->discapacidad ?? 0),
+            'valor' => (float) $p->valor,
+            'iva' => (float) $p->iva,
+            'certificado' => 0,
+        ];
+    })->toArray()
+];
+
+		
+		
+
+        // 3️⃣ Consumir el API de certificados
+        $response = Http::timeout(20)
+            ->acceptJson()
+            ->post(config('services.certificados.url'), $payload);
+			
+			
+			//dd($response );
+
+        if (!$response->successful()) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => $response->body(),
+                'api_response' => $response->body()
+            ], 502);
+        }
+
+        $apiResponse = $response->json();
+
+        if (!isset($apiResponse['success']) || $apiResponse['success'] !== true) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'El API no confirmó la emisión de certificados.',
+                'api_response' => $apiResponse
+            ], 422);
+        }
+
+        // 4️⃣ API OK → marcar certificados en BD
+        $updated = ParticipanteCorporativa::where('inscripcion_id', $id)
+            ->update(['certificado' => 1]);
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Se envío correctamente a la cola de correo.',
+            'inscripcion_id' => (int) $id,
+            'participantes' => $participantes->count(),
+            'updated' => $updated
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error interno al emitir certificados.',
+            'error' => $e->getMessage()
+        ], 500);
+    }
 }
+
+
+public function pdv()
+{
+    try {
+
+        DB::beginTransaction();
+
+        // 1️⃣ Traer todos los pendientes
+        $participantes = Participante::where('created_by_id', '!=', 8)
+            ->where(function ($q) {
+                $q->whereNull('certificado')
+                  ->orWhere('certificado', 0);
+            })
+            ->get();
+
+        if ($participantes->isEmpty()) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'No existen participantes pendientes.'
+            ], 404);
+        }
+
+        // 2️⃣ Agrupar por inscripcion_id
+        $grupos = $participantes->groupBy('inscripcion_id');
+
+        foreach ($grupos as $inscripcionId => $grupoParticipantes) {
+
+            $createdById = $grupoParticipantes->first()->created_by_id;
+
+            $payload = [
+                'inscripcion_id' => (int) $inscripcionId,
+                'created_by_id'  => (int) $createdById,
+                'participantes'  => $grupoParticipantes->map(function ($p) {
+                    return [
+                        'tipo_inscripcion' => (int) $p->tipo_inscripcion,
+                        'tipo_documento'   => $p->tipo_documento,
+                        'numero_documento' => $p->numero_documento,
+                        'nombres'          => $p->nombres,
+                        'apellidos'        => $p->apellidos,
+                        'nacionalidad'     => $p->nacionalidad,
+                        'genero'           => $p->genero,
+                        'fecha_nacimiento' => $p->fecha_nacimiento,
+                        'categoria'        => $p->categoria,
+                        'talla'            => $p->talla,
+                        'celular'          => $p->celular,
+                        'email'            => $p->email,
+                        'direccion'        => $p->direccion,
+                        'provincia'        => $p->provincia,
+                        'ciudad'           => $p->ciudad,
+                        'parroquia'        => $p->parroquia,
+                        'corral'           => $p->corral,
+                        'tercera_edad'     => (int) ($p->tercera_edad ?? 0),
+                        'discapacidad'     => (int) ($p->discapacidad ?? 0),
+                        'valor'            => (float) $p->valor,
+                        'iva'              => (float) $p->iva,
+                        'certificado'      => 0,
+                    ];
+                })->values()->toArray()
+            ];
+			
+			
+
+            // 🔥 Consumir API por cada inscripción
+            $response = Http::timeout(20)
+                ->acceptJson()
+                ->post(config('services.pdv.url'), $payload);
+
+            if (!$response->successful()) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error API',
+                    'api_response' => $response->body()
+                ], 502);
+            }
+
+            $apiResponse = $response->json();
+
+            if (!isset($apiResponse['success']) || $apiResponse['success'] !== true) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'API no confirmó emisión',
+                    'api_response' => $apiResponse
+                ], 422);
+            }
+
+            // 3️⃣ Marcar solo los de esa inscripción como enviados
+            Participante::where('inscripcion_id', $inscripcionId)
+                ->whereIn('id', $grupoParticipantes->pluck('id'))
+                ->update(['certificado' => 1]);
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Certificados enviados correctamente.',
+            'total_inscripciones' => $grupos->count(),
+            'total_participantes' => $participantes->count()
+        ]);
+
+    } catch (\Exception $e) {
+
+        DB::rollBack();
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error interno',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
 
 
     /**
@@ -165,24 +419,56 @@ public function resumen(Request $request)
      
 
 
-    $participantes = ParticipanteCorporativaTemporal::with('tipoInscripcion')
-            ->where('inscripcion_id', $inscripcionId)
-            ->get();
+$participantes = ParticipanteCorporativaTemporal::with('tipoInscripcion')
+    ->where('inscripcion_id', $inscripcionId)
+    ->get();
+	    $primer = $participantes->take(10);
+	
+
+$subtotal = 0;
+$iva_total = 0;
+$descuento_total = 0;
 
 
-    $primer = $participantes->take(10);
 
-        $subtotal = 0;
-        $iva_total = 0;
-        foreach ($participantes as $p) {
-            $valor = $p->tipoInscripcion->valor ?? 0;
-            $iva=$valor-($valor/(1+$p->tipoInscripcion->iva));
-            $valor=$valor-$iva;
-            $subtotal += $valor;
-            $iva_total += $iva;
+foreach ($participantes as $p) {
+
+    $valorBase = $p->tipoInscripcion->valor ?? 0;
+    $ivaRate   = $p->tipoInscripcion->iva ?? 0; // ej 0.12
+
+    $descuento = 0;
+
+    // 1) Descuento por tercera edad (50%)
+    if (!empty($p->fecha_nacimiento)) {
+        $edad = \Carbon\Carbon::parse($p->fecha_nacimiento)->age;
+
+        if ($edad >= 65) {
+            $descuento = max($descuento, $valorBase * 0.50);
         }
-        $total = $subtotal+$iva_total;
+    }
 
+    // 2) Descuento por discapacidad (50%)
+    $flagDiscap = strtoupper(trim((string)($p->discapacidad ?? '')));
+    $tieneDiscapacidad = in_array($flagDiscap, ['SI', 'SÍ'], true);
+
+    if ($tieneDiscapacidad) {
+        $descuento = max($descuento, $valorBase * 0.50);
+    }
+
+    $valorConDescuento = $valorBase - $descuento;
+
+    // 3) Separar IVA (asumiendo que $valorConDescuento incluye IVA)
+    $iva = $valorConDescuento - ($valorConDescuento / (1 + $ivaRate));
+    $valorSinIva = $valorConDescuento - $iva;
+
+    $subtotal        += $valorSinIva;
+    $iva_total       += $iva;
+    $descuento_total += $descuento;
+}
+
+
+
+$total = $subtotal + $iva_total;
 
 
 $formasPago = FormaPago::where('estado', 'A')->get();
@@ -243,8 +529,24 @@ public function finalizar(Request $request)
     unset($data['id']); // Eliminar ID para evitar conflictos de duplicado
 
     if (ParticipanteHelper::yaInscrito($data['numero_documento'])) {
-        return redirect()->back()->with('success', 'El participante '.$data['numero_documento']. '  ya está inscrito en otra modalidad.');
+       throw new \Exception('El participante '.$data['numero_documento'].' ya está inscrito en otra modalidad.');
     }
+	
+	
+
+
+        // Asumo que InscripcionCorporativa tiene el campo tipo_inscripcion_id
+        $tipoInscripcion = InscripcionTipoCorporativa::findOrFail($data['tipo_inscripcion']);
+
+        // 1 = CORPORATIVAS 15K, 5 = CORPORATIVAS 21K
+        // Mapeo a carrera_id: 1 => 15K, 2 => 21K
+        if ($tipoInscripcion->id == 1) {
+            $carreraId = 1;   // 15K
+        } elseif ($tipoInscripcion->id == 5) {
+            $carreraId = 2;   // 21K
+        } else {
+            $carreraId = 1;   // por defecto 15K (ajusta si quieres)
+        }
 
 
     // Edad y tercera edad
@@ -257,15 +559,20 @@ public function finalizar(Request $request)
         isset($data['discapacidad']) && strtoupper(trim($data['discapacidad'])) === 'SI'
     ) ? 1 : 0;
 
-    // Categoría
-    $categoria = Categoria::where('edad_min', '<=', $edad)
-        ->where(function ($q) use ($edad) {
-            $q->whereNull('edad_max')->orWhere('edad_max', '>=', $edad);
-        })->first();
-    $data['categoria'] = $categoria->nombre ?? 'SIN CATEGORÍA';
+// 3) Categoría por edad + carrera
+            $categoria = Categoria::where('carrera_id', $carreraId)
+                ->where('edad_min', '<=', $edad)
+                ->where(function ($q) use ($edad) {
+                    $q->whereNull('edad_max')
+                      ->orWhere('edad_max', '>=', $edad);
+                })
+                ->first();
+
+            $data['categoria'] = $categoria->nombre ?? 'SIN CATEGORÍA';
+
 
     // Descuento si tercera edad o discapacidad
-    $tipoInscripcion = InscripcionTipoCorporativa::where('id', 1)->first();
+    //$tipoInscripcion = InscripcionTipoCorporativa::where('id', 1)->first();
     $valorBase = $tipoInscripcion->valor ?? 0;
     $aplicaDescuento = $data['tercera_edad'] == 1 || $data['discapacidad'] == 1;
     $valorFinal = $aplicaDescuento ? $valorBase / 2 : $valorBase;
@@ -322,35 +629,47 @@ public function finalizar(Request $request)
                 'iva'                    => $iva,
                 'pagado'                 => 1 ,
                 'forma_pago_id'  => $request->forma_pago,
+                'referencia'  => $request->referencia,
             ];
 
               // dd($data); 
             $factura =FacturacionCorporativa::create ($data);
+            $id_facturacion=$factura->id;
 
      
             // Actualizar estado de la inscripción
             InscripcionCorporativa::where('id', $inscripcionId)->update(['estado' => 1]);
 
             // Detalles por participante
-            foreach ($participantes as $p) {
-                
-             DB::table('inventario_total')
-            ->where('talla', $p->talla)
-          //  ->where('stock_restante', '>', 0)
-            ->decrement('stock_restante', 1);
+       foreach ($participantes as $p) {
 
-         
-            }
+    // carrera_id según tipo_inscripcion (1 => 15K, 5 => 21K)
+    $tipo = InscripcionTipoCorporativa::findOrFail($p->tipo_inscripcion);
 
+    if ($tipo->id == 1) {
+        $carreraId = 1; // 15K
+    } elseif ($tipo->id == 5) {
+        $carreraId = 2; // 21K
+    } else {
+        $carreraId = 1; // default
+    }
+
+    DB::table('inventario_total')
+        ->where('talla', $p->talla)
+        ->where('genero', $p->genero)
+        ->where('carrera_id', $carreraId)
+        ->decrement('stock_restante', 1);
+}
 
         DB::commit();
+        Session::put('establecimiento', $id_facturacion);
         session()->forget('inscripcion_id');
 
         return redirect()->route('admin.corporativas.index')->with('success', 'Inscripción completada exitosamente.');
 
     } catch (\Exception $e) {
         DB::rollBack();
-        session()->forget('inscripcion_id');
+       // session()->forget('inscripcion_id');
         return redirect()->back()->with('error', 'Error al finalizar: ' . $e->getMessage());
     }
 }
@@ -388,7 +707,6 @@ public function gratuitas(Request $request)
         try {
             // Verificar si ya existe facturación para la inscripción
                  
-
             DB::beginTransaction();
             
             $temporales = ParticipanteCorporativaTemporal::where('inscripcion_id', $inscripcionId)->get();
@@ -435,6 +753,24 @@ public function gratuitas(Request $request)
 
     $data['created_at'] = $temp->created_at;
     $data['updated_at'] = $temp->updated_at;
+
+ 
+ 
+// --- CORRAL: si EXISTE en base2024 → asignar 'A'; si NO existe → DEFAULT ---
+$cedula = trim((string) ($data['numero_documento'] ?? ''));
+
+if ($cedula !== '') {
+
+    $existe = DB::table('base2024')
+        ->where('CEDULA', $cedula)
+        ->exists();
+
+    if ($existe) {
+        $data['corral'] = 'A';
+    } else {
+        unset($data['corral']); // aplica DEFAULT (CROP.)
+    }
+}
 
  
     // Crear participante

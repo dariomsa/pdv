@@ -9,11 +9,9 @@
     </div>
 	
     
- @if(session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
+
+
+
 
 
 
@@ -57,7 +55,7 @@
                                         @csrf
                                         @method('DELETE')
                                         
-                                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                                      <!--  <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>-->
                                     </form>
                                 </td>
                             </tr>
@@ -69,6 +67,12 @@
                    <form action="{{ route('admin.inscripciones.resumen') }}" method="POST">
     @csrf
     <button type="submit" class="btn btn-success">Confirmar Inscripción</button>
+	
+	
+  <button type="button" class="btn btn-primary" id="btnShowForm">
+    Añadir otro participante
+  </button>
+  
 </form>
 
                 </div>
@@ -76,6 +80,7 @@
         @endif
     @endif
 
+<div id="formWrap" style="{{ session()->has('inscripcion_id') ? 'display:none;' : '' }}">
     
      <form method="POST" action="{{ route('admin.inscripciones.store') }}" enctype="multipart/form-data" class="was-validated">
         @csrf
@@ -84,13 +89,35 @@
             <div class="participant-form border p-3 mb-4 rounded">
                 <h5 class="celeste" >Información del Participante</h5>
                 <div class="form-row">
-                    <div class="form-group col-md-4">
-                        <label for="tipo_inscripcion">Tipo de Inscripción</label>
-                        <select class="form-control" name="tipo_inscripcion">
-                            <option value="1">GENERAL</option>
-                        </select>
-                    </div>
-                    <div class="form-group col-md-4">
+                 <div class="form-group col-md-4">
+    <label for="tipo_inscripcion">Tipo de Inscripción</label>
+<select class="form-control" id="tipo_inscripcion" name="tipo_inscripcion">
+  <option value="">Seleccione</option>
+  @foreach($tiposInscripcion as $tipo)
+            <option value="{{ $tipo->id }}"
+                {{ old('tipo_inscripcion') == $tipo->id ? 'selected' : '' }} data-carrera="{{ $tipo->carrera_id }}">
+                {{ $tipo->nombre }}
+            </option>
+        @endforeach
+</select>
+
+
+
+	 <select name="subtipo_conadis15k" id="subtipo_conadis15k" class="form-control" style="display:none; margin-top:10px;">
+								 <option value="COMPETENCIA">SILLA DE RUEDAS PASEO</option>
+								 <option value="PASEO">SILLA DE RUEDAS COMPETENCIA</option>
+								 <option value="HANDCYCLE">SILLA DE RUEDAS HANDCYCLE</option>
+								 <option value="OTROS">OTRAS DISCAPACIDADES</option>
+							     </select>
+								 
+								 <select name="subtipo_conadis21k" id="subtipo_conadis21k" class="form-control" style="display:none; margin-top:10px;">
+							
+								 <option value="OTROS">OTRAS DISCAPACIDADES</option>
+							     </select>
+
+</div>
+
+                    <div class="form-group col-md-4"> 
                         <label for="tipo_documento">Tipo de Documento</label>
                       <select class="form-control" required name="tipo_documento" id="tipo_doc_participante" onChange="Cambio2()" >
                             <option value="C">Cédula</option>
@@ -131,16 +158,22 @@
                     </div>
                     <div class="form-group col-md-3">
                         <label for="genero">Género</label>
-                        <select class="form-control" name="genero" required>
+                        <select class="form-control" name="genero" id="genero" required>
                             <option value="">Seleccione una opción</option>
                               <option value="M">Masculino</option>
             <option value="F">Femenino</option>
                         </select>
                     </div>
-                    <div class="form-group col-md-3">
-                        <label for="fecha_nacimiento">Fecha de Nacimiento</label>
-                        <input type="date" class="form-control" max="2010-01-01" name="fecha_nacimiento" required>
-                    </div>
+                   <div class="form-group col-md-3">
+  <label for="fecha_nacimiento">Fecha de Nacimiento</label>
+  <input
+    type="date"
+    id="fecha_nacimiento"
+    class="form-control"
+    name="fecha_nacimiento"
+    required
+  >
+</div>
   <div class="form-group col-md-3">
                     <label for="categoria">Categoría</label>
                     <input type="text" class="form-control" name="categoria"  readonly id="categoria_output">
@@ -154,11 +187,9 @@
                 <div class="form-row">
                     <div class="form-group col-md-4">
                         <label for="talla">Talla Camiseta</label>
-                        <select class="form-control" name="talla" required>
+                        <select class="form-control" name="talla" id="cami" required>
                         <option value="">Seleccione una opción</option>
-                         @foreach ($tallasDisponibles as $item)
-                          <option value="{{ $item->talla }}">{{ $item->talla }}</option>
-                         @endforeach
+                         
                         </select>
                     </div>
                     <div class="form-group col-md-4">
@@ -184,7 +215,7 @@
         placeholder="09xxxxxxxx"
     >
 </div>
-                            </div>
+                            </div> 
                     <div class="form-group col-md-4">
                         <label for="email">Email Participante</label>
                         <input autocomplete="off"  type="email" class="form-control" name="email" id="inscripcion_email"  required> 
@@ -196,18 +227,28 @@
                         <label for="direccion">Dirección</label>
                         <input  autocomplete="off" type="text" class="form-control" name="direccion" required>
                     </div>
-                    <div class="form-group col-md-3">
-                        <label for="provincia">Provincia</label>
-                        <input  autocomplete="off" type="text" class="form-control" name="provincia" required>
-                    </div>
-                    <div class="form-group col-md-3">
-                        <label for="ciudad">Ciudad</label>
-                        <input  autocomplete="off" type="text" class="form-control" name="ciudad" required>
-                    </div>
-                    <div class="form-group col-md-2">
-                    <label for="parroquia">Parroquia</label>
-                    <input  autocomplete="off" type="text" class="form-control" name="parroquia" required>
-                </div>
+                  
+				  <div class="form-group col-md-3">
+  <label for="provincia_select">Provincia</label>
+  <select class="form-control" name="provincia" id="provincia_select" required>
+    <option value="">Seleccione...</option>
+  </select>
+</div>
+
+<div class="form-group col-md-3">
+  <label for="canton_select">Cantón</label>
+  <select class="form-control" name="ciudad" id="canton_select" required>
+    <option value="">Seleccione...</option>
+  </select>
+</div>
+
+<div class="form-group col-md-2">
+  <label for="parroquia_select">Parroquia</label>
+  <select class="form-control" name="parroquia" id="parroquia_select" required>
+    <option value="">Seleccione...</option>
+  </select>
+</div>
+
                 </div>
                 
 
@@ -246,10 +287,21 @@
         </div>
 
         <div class="form-group">
-            <button type="submit" class="btn btn-primary" id="add-participant">+ Añadir Participante</button>
+            <button type="submit" class="btn btn-primary" id="add-participant">Continuar</button>
    
         </div>
     </form>
+</div></div>
+
+{{-- LOADING OVERLAY --}}
+<div id="globalLoading">
+  <div class="loading-card">
+    <div class="spinner"></div>
+    <div class="loading-text">
+      <div class="loading-title">Procesando…</div>
+      <div class="loading-sub">Un momento por favor</div>
+    </div>
+  </div>
 </div>
 
 @push('scripts')
@@ -364,39 +416,103 @@
   <script src="https://code.jquery.com/ui/1.14.1/jquery-ui.js"></script>
 
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
 
+    const tipoSelect = document.getElementById('tipo_inscripcion');
+    const conadis15k = document.getElementById('subtipo_conadis15k');
+    const conadis21k = document.getElementById('subtipo_conadis21k');
+
+    function toggleSubtipos() {
+        const value = tipoSelect.value;
+
+        // Ocultar ambos primero
+        conadis15k.style.display = 'none';
+        conadis21k.style.display = 'none';
+
+        // Limpiar selección cuando se ocultan
+        conadis15k.selectedIndex = 0;
+        conadis21k.selectedIndex = 0;
+
+        if (value == '4') {
+            conadis15k.style.display = 'block';
+        }
+
+        if (value == '8') {
+            conadis21k.style.display = 'block';
+        }
+    }
+
+    // Ejecutar al cambiar
+    tipoSelect.addEventListener('change', toggleSubtipos);
+
+    // Ejecutar al cargar (por si viene old() seleccionado)
+    toggleSubtipos();
+});
+</script>
   
-
-
-
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const inputFecha = document.querySelector('[name="fecha_nacimiento"]');
-    const categoriaOutput = document.getElementById('categoria_output');
+  const inputFecha = document.querySelector('[name="fecha_nacimiento"]');
+  const categoriaOutput = document.getElementById('categoria_output');
+  const selectTipo = document.getElementById('tipo_inscripcion');
 
-    inputFecha.addEventListener('change', function () {
-        const fecha = this.value;
-        if (!fecha) return;
+  function getCarreraId() {
+    const opt = selectTipo?.options?.[selectTipo.selectedIndex];
+    return opt ? parseInt(opt.dataset.carrera || '0', 10) : 0;
+  }
 
-        fetch('/admin/categoria/por-fecha', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({ fecha_nacimiento: fecha })
-        })
-        .then(res => res.json())
-        .then(data => {
-          console.log(data);
-            if (data.categoria) {
-                categoriaOutput.value = data.categoria;
-            } else {
-                categoriaOutput.value = 'Sin categoría';
-            }
-        });
+  function consultarCategoria() {
+    const fecha = inputFecha.value;
+    if (!fecha) return;
+
+    const carrera_id = getCarreraId();
+    if (!carrera_id) {
+      categoriaOutput.value = 'Sin categoría';
+      return;
+    }
+
+    fetch('/admin/categoria/por-fecha', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({
+        fecha_nacimiento: fecha,
+        carrera_id: carrera_id
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log(data);
+      categoriaOutput.value = data?.categoria ? data.categoria : 'Sin categoría';
+    })
+    .catch(() => {
+      categoriaOutput.value = 'Sin categoría';
     });
+  }
+
+  // cuando cambia la fecha
+  inputFecha.addEventListener('change', consultarCategoria);
+
+  // opcional: si cambias tipo_inscripcion, recalcula con la fecha ya ingresada
+if (selectTipo) {
+  selectTipo.addEventListener('change', function () {
+
+    inputFecha.value = '';
+
+
+    categoriaOutput.value = '';
+
+
+  });
+}
+  
+  
 });
+
+
 
 
 	  //Validar las cajas de texto...
@@ -409,6 +525,349 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
 </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const inputDocumento = document.getElementById('documento');
+
+    inputDocumento.addEventListener('change', function () {
+        const numeroDocumento = this.value.trim();
+        if (!numeroDocumento) return;
+
+        fetch('/buscar/base2024', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ cedula: numeroDocumento })
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log(data);
+
+            if (data.existe) {
+                // Rellenar campos según el JSON recibido (ejemplo)
+              document.querySelector('[name="nombres"]').value = data.nombres ?? '';
+                document.querySelector('[name="apellidos"]').value = data.apellidos ?? '';
+                document.querySelector('[name="genero"]').value = data.genero?.startsWith('M') ? 'M' : 'F';
+                document.querySelector('[name="fecha_nacimiento"]').value = data.fecha_nacimiento?.split(' ')[0] ?? '';
+                document.querySelector('[name="talla"]').value = data.talla ?? '';
+                document.querySelector('[name="email"]').value = data.email ?? '';
+                document.querySelector('[name="celular"]').value = data.telefono ?? '';
+                  document.querySelector('[name="categoria"]').value = data.categoria ?? '';
+                // ... puedes agregar más campos
+            } else {
+                //alert('No se encontró registro en base2024');
+            }
+        })
+        .catch(error => {
+            console.error('Error al consultar base2024:', error);
+        });
+    });
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  // Nacionalidad EXISTE, no la tocamos
+  const $pais = document.querySelector('select[name="nacionalidad"]');
+
+  const $provincia = document.getElementById('provincia_select');
+  const $canton    = document.getElementById('canton_select');
+  const $parroquia = document.getElementById('parroquia_select');
+
+  function setOptions($select, items, placeholder){
+    $select.innerHTML = '';
+    const opt0 = document.createElement('option');
+    opt0.value = '';
+    opt0.textContent = placeholder || 'Seleccione...';
+    $select.appendChild(opt0);
+
+    (items || []).forEach(txt => {
+      const opt = document.createElement('option');
+      opt.value = txt;
+      opt.textContent = txt;
+      $select.appendChild(opt);
+    });
+  }
+
+  async function loadProvincias(paisCodigo){
+    setOptions($provincia, [], 'Cargando...');
+    setOptions($canton, [], 'Seleccione...');
+    setOptions($parroquia, [], 'Seleccione...');
+
+    const res = await fetch(`/admin/geo/provincias?pais=${encodeURIComponent(paisCodigo)}`);
+    const data = await res.json();
+
+    setOptions($provincia, data || [], 'Seleccione provincia...');
+  }
+
+  async function loadCantones(paisCodigo, provincia){
+    setOptions($canton, [], 'Cargando...');
+    setOptions($parroquia, [], 'Seleccione...');
+
+    const res = await fetch(`/admin/geo/cantones?pais=${encodeURIComponent(paisCodigo)}&provincia=${encodeURIComponent(provincia)}`);
+    const data = await res.json();
+
+    setOptions($canton, data || [], 'Seleccione cantón...');
+  }
+
+  async function loadParroquias(paisCodigo, provincia, canton){
+    setOptions($parroquia, [], 'Cargando...');
+
+    const res = await fetch(`/admin/geo/parroquias?pais=${encodeURIComponent(paisCodigo)}&provincia=${encodeURIComponent(provincia)}&canton=${encodeURIComponent(canton)}`);
+    const data = await res.json();
+
+    setOptions($parroquia, data || [], 'Seleccione parroquia...');
+  }
+
+  // Eventos
+  $pais.addEventListener('change', () => {
+    loadProvincias($pais.value || 'EC');
+  });
+
+  $provincia.addEventListener('change', () => {
+    if(!$provincia.value){
+      setOptions($canton, [], 'Seleccione...');
+      setOptions($parroquia, [], 'Seleccione...');
+      return;
+    }
+    loadCantones($pais.value || 'EC', $provincia.value);
+  });
+
+  $canton.addEventListener('change', () => {
+    if(!$canton.value){
+      setOptions($parroquia, [], 'Seleccione...');
+      return;
+    }
+    loadParroquias($pais.value || 'EC', $provincia.value, $canton.value);
+  });
+
+
+  loadProvincias($pais.value || 'EC');
+
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const btn = document.getElementById('btnShowForm');
+  const formWrap = document.getElementById('formWrap');
+
+  if(btn && formWrap){
+    btn.addEventListener('click', function(){
+      formWrap.style.display = 'block';
+      formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  // carrera 1: min edad_min = 16
+  // carrera 2: min edad_min = 18
+  // carrera 3: es por AÑO (2018-2019, 2016-2017...), el más nuevo es 2019
+  const categoriasPorCarrera = {
+    1: { mode: 'age', min: 16 },      // 15K
+    2: { mode: 'age', min: 18 },      // 21K
+    3: { mode: 'year', maxYear: 2019 } // 5K (por año de nacimiento)
+  };
+
+  const selTipo = document.getElementById('tipo_inscripcion');
+  const inpFecha = document.getElementById('fecha_nacimiento');
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+
+  function setMaxFechaByCarrera(carreraId){
+    const cfg = categoriasPorCarrera[Number(carreraId)];
+    if (!cfg) return; // si no está mapeado, no toca nada
+
+    let maxDate = null;
+
+    if (cfg.mode === 'age') {
+      // max = hoy - minEdad años (el más joven permitido)
+      const hoy = new Date();
+      const d = new Date(hoy.getFullYear() - cfg.min, hoy.getMonth(), hoy.getDate());
+      maxDate = `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+    } else if (cfg.mode === 'year') {
+      // max = fin del año más nuevo permitido
+      maxDate = `${cfg.maxYear}-12-31`;
+    }
+
+    if (maxDate) {
+      inpFecha.max = maxDate;
+
+      // Si el usuario ya había puesto una fecha mayor al max, la limpiamos
+      if (inpFecha.value && inpFecha.value > maxDate) {
+        inpFecha.value = '';
+      }
+    }
+  }
+
+  function carreraFromSelect(){
+    const opt = selTipo.options[selTipo.selectedIndex];
+    return opt ? opt.dataset.carrera : null;
+  }
+
+  // al cargar
+  setMaxFechaByCarrera(carreraFromSelect());
+
+  // al cambiar tipo_inscripcion
+  selTipo.addEventListener('change', () => {
+    setMaxFechaByCarrera(carreraFromSelect());
+  });
+
+});
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  const loadingEl = document.getElementById('globalLoading');
+  let loadingTimer = null;
+  let loadingCount = 0;
+
+  function showLoading(){
+    loadingCount++;
+    if (!loadingEl) return;
+    loadingEl.classList.add('show');
+  }
+
+  function hideLoading(){
+    loadingCount = Math.max(0, loadingCount - 1);
+    if (!loadingEl) return;
+    if (loadingCount === 0) loadingEl.classList.remove('show');
+  }
+
+  // Para cambios rápidos, evitamos parpadeo
+  function flashLoading(ms = 300){
+    showLoading();
+    clearTimeout(loadingTimer);
+    loadingTimer = setTimeout(() => {
+      hideLoading();
+    }, ms);
+  }
+
+  // ✅ 1) Mostrar loading en cada change / input del form
+  const formWrap = document.getElementById('formWrap');
+  if (formWrap) {
+    formWrap.addEventListener('change', function(e){
+      const t = e.target;
+      if (!t) return;
+
+      // SOLO campos del formulario (inputs/selects/textarea)
+      const isField = ['SELECT'].includes(t.tagName);
+      if (!isField) return;
+
+      flashLoading(300);
+    });
+
+
+  }
+
+  // ✅ 2) Hook global: mostrar loading automáticamente en TODOS los fetch()
+  // (tu categoria/por-fecha, buscar/base2024, geo/provincias, etc.)
+  const originalFetch = window.fetch;
+  window.fetch = function(...args){
+    showLoading();
+    return originalFetch(...args)
+      .then(res => res)
+      .catch(err => { throw err; })
+      .finally(() => hideLoading());
+  };
+
+  // ✅ 3) Mostrar loading al enviar el form (Continuar)
+  const form = formWrap ? formWrap.querySelector('form') : null;
+  if (form) {
+    form.addEventListener('submit', function(){
+      showLoading();
+    });
+  }
+
+});
+</script>
+
+
+
+<script>
+$(function () {
+
+  const $selTipo = $('#tipo_inscripcion'); // tipo_inscripcion (options vienen por AJAX)
+  const $genero  = $('#genero');
+  const $cami    = $('#cami');
+
+  function getCarreraId() {
+    const opt = $selTipo.find('option:selected');
+    return opt.length ? parseInt(opt.data('carrera') || 0, 10) : 0;
+  }
+
+  function resetTallas(msg = 'Seleccione') {
+    $cami.prop('disabled', true).empty()
+      .append('<option value="" selected disabled>Seleccione género</option>');
+  }
+
+  async function cargarTallasDisponibles() {
+    const carreraId = getCarreraId();
+    const genero = $genero.val();
+
+    console.log('cargarTallasDisponibles => carreraId:', carreraId, 'genero:', genero);
+
+    if (!carreraId || !genero) {
+      resetTallas('Seleccione');
+      return;
+    }
+
+    resetTallas('Cargando...');
+
+    $.ajax({
+      url: '/admin/tallas',
+      type: 'GET',
+      dataType: 'json',
+      data: { carrera_id: carreraId, genero: genero },
+      success: function (data) {
+        $cami.prop('disabled', false).empty()
+          .append('<option value="" selected disabled>Seleccione</option>');
+
+        if (Array.isArray(data) && data.length) {
+          data.forEach(function(t){
+            $cami.append('<option value="' + t + '">' + t + '</option>');
+          });
+        } else {
+          resetTallas('Sin stock');
+        }
+      },
+      error: function (xhr) {
+        console.error('Error tallas:', xhr.status, xhr.responseText);
+        resetTallas('Error al cargar');
+      }
+    });
+  }
+
+  // ✅ cuando cambie género -> cargar tallas
+  $genero.on('change', cargarTallasDisponibles);
+
+  // ✅ si cambia tipo_inscripcion -> limpia talla y (si ya hay genero) recarga
+  $selTipo.on('change', function(){
+    resetTallas('Seleccione');
+    if ($genero.val()) cargarTallasDisponibles();
+  });
+
+  // ✅ al cargar la página: deja lista la talla (por si ya hay género seleccionado)
+  resetTallas('Seleccione');
+  if ($genero.val()) cargarTallasDisponibles();
+
+});
+</script>
+
+
+
+
 
 @endsection
 

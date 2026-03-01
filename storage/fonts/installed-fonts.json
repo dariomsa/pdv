@@ -1,0 +1,59 @@
+{
+    "encode sans": {
+        "100": "\/var\/www\/html\/storage\/fonts\/encode_sans_100_38569f3afa519066c6003b8d04f7708f",
+        "200": "\/var\/www\/html\/storage\/fonts\/encode_sans_200_bcfa9a210f0165626ae1fcf4065a8c3d",
+        "300": "\/var\/www\/html\/storage\/fonts\/encode_sans_300_2696aa3253a76f60c8cf1da4dd85615c",
+        "normal": "encode_sans_normal_fb055d335709fdc3690cf666e31615f3",
+        "500": "\/var\/www\/html\/storage\/fonts\/encode_sans_500_fcdbdc3c959e66bf7b15ddcfdba2366c",
+        "600": "\/var\/www\/html\/storage\/fonts\/encode_sans_600_44c24e9c1cfa59d158ab82bbec773f7e",
+        "bold": "\/var\/www\/html\/storage\/fonts\/encode_sans_bold_ea4b84d19d6b8874740f20595372c298",
+        "800": "\/var\/www\/html\/storage\/fonts\/encode_sans_800_3e144a412e7f19b298582cdc1124a054",
+        "900": "\/var\/www\/html\/storage\/fonts\/encode_sans_900_d65fa6c5d3df31100b49f0c3c3808681"
+    },
+    "roboto": {
+        "100_italic": "\/var\/www\/html\/storage\/fonts\/roboto_100_italic_71d4fad1ca0f22d70d8be7cc40bb76ab",
+        "300_italic": "\/var\/www\/html\/storage\/fonts\/roboto_300_italic_3d719d848a0b6b3f4f0918985ffd2db7",
+        "italic": "\/var\/www\/html\/storage\/fonts\/roboto_italic_e3ef71c7d9eeac822fc7d92d4fc7ff6e",
+        "500_italic": "\/var\/www\/html\/storage\/fonts\/roboto_500_italic_e69cd621b57d68ed0b47f09bd22a3d7e",
+        "bold_italic": "\/var\/www\/html\/storage\/fonts\/roboto_bold_italic_76e4a6bfadf19fea9990a367967a3f96",
+        "900_italic": "\/var\/www\/html\/storage\/fonts\/roboto_900_italic_7ad2e464d2e86e53eea8619bf6734bbe",
+        "100": "\/var\/www\/html\/storage\/fonts\/roboto_100_1c4e32da7e6c8539dd3a51af38f413be",
+        "300": "\/var\/www\/html\/storage\/fonts\/roboto_300_32acfcb296f555e063ebba2be7db9e2f",
+        "normal": "\/var\/www\/html\/storage\/fonts\/roboto_normal_7bc701b343c10631f60048716b96e4f7",
+        "500": "\/var\/www\/html\/storage\/fonts\/roboto_500_5774d6fb05eba3d096525f821dbe4137",
+        "bold": "\/var\/www\/html\/storage\/fonts\/roboto_bold_8db5cb5d0586c1e891426d13097b1d04",
+        "900": "roboto_900_7bf41cacaff90e7097ddd49fb9296601"
+    },
+    "lato": {
+        "100_italic": "\/var\/www\/html\/storage\/fonts\/lato_100_italic_44e4c60a7625d0726917c5586600eef3",
+        "300_italic": "\/var\/www\/html\/storage\/fonts\/lato_300_italic_5d458a0bea2edc814cad9956eabe8265",
+        "italic": "\/var\/www\/html\/storage\/fonts\/lato_italic_b7fa5abebbe1668203ae32668ec9cd2e",
+        "bold_italic": "\/var\/www\/html\/storage\/fonts\/lato_bold_italic_6fe97904fa17d2ccdc33faba12fa878c",
+        "900_italic": "\/var\/www\/html\/storage\/fonts\/lato_900_italic_9d745788e8b9254eca55b7b9d6642bc8",
+        "100": "\/var\/www\/html\/storage\/fonts\/lato_100_70daffc5a0e459436079609c81930e2f",
+        "300": "\/var\/www\/html\/storage\/fonts\/lato_300_bfdde39714afa6c7c8803648317f8517",
+        "normal": "\/var\/www\/html\/storage\/fonts\/lato_normal_51116b245f08d5e5cdb537d25637e400",
+        "bold": "\/var\/www\/html\/storage\/fonts\/lato_bold_39c477866ca5e9b58b0b56a69b4bac5a",
+        "900": "lato_900_f2c6fe94dc8549ffc66e6fb626318e87"
+    },
+    "epilogue": {
+        "100_italic": "\/var\/www\/html\/storage\/fonts\/epilogue_100_italic_b5c23540430dbb12d42aca63d5ea95c4",
+        "200_italic": "\/var\/www\/html\/storage\/fonts\/epilogue_200_italic_d76d9da3a27ed1890ece473696d01ad6",
+        "300_italic": "\/var\/www\/html\/storage\/fonts\/epilogue_300_italic_a0bd9c5481b98e48a761c0b17c10cd48",
+        "italic": "\/var\/www\/html\/storage\/fonts\/epilogue_italic_18cd3fb3f59fea85584970b7fcd18e27",
+        "500_italic": "\/var\/www\/html\/storage\/fonts\/epilogue_500_italic_7792e96459b2ec0becd5ba1b6d306165",
+        "600_italic": "\/var\/www\/html\/storage\/fonts\/epilogue_600_italic_d5cda0294a234aedaec947b857de5a9b",
+        "bold_italic": "\/var\/www\/html\/storage\/fonts\/epilogue_bold_italic_084114b0d5a97651283ddd9d09092317",
+        "800_italic": "\/var\/www\/html\/storage\/fonts\/epilogue_800_italic_336628f0c5a56f5bf10966e3b9897994",
+        "900_italic": "\/var\/www\/html\/storage\/fonts\/epilogue_900_italic_bb4e6e43a86f97b56a0c0e1077b1a918",
+        "100": "\/var\/www\/html\/storage\/fonts\/epilogue_100_c1c992eed8aaa72db60724b57c447d5a",
+        "200": "\/var\/www\/html\/storage\/fonts\/epilogue_200_e3600125b887d7dc41758aa931d35738",
+        "300": "\/var\/www\/html\/storage\/fonts\/epilogue_300_1a04c8e5a5669fadee81c229146a0653",
+        "normal": "\/var\/www\/html\/storage\/fonts\/epilogue_normal_f04ead399f317402d8c25b54b508bf66",
+        "500": "\/var\/www\/html\/storage\/fonts\/epilogue_500_d84b42145f9e23e9188ffbd717e5dc34",
+        "600": "\/var\/www\/html\/storage\/fonts\/epilogue_600_219ac259c7a18adf8f94687ee52f7515",
+        "bold": "\/var\/www\/html\/storage\/fonts\/epilogue_bold_d1c321bd6485bdd75eecb865d9dc5bd0",
+        "800": "\/var\/www\/html\/storage\/fonts\/epilogue_800_742133c253e2321ccb09ab5dcb1d60a2",
+        "900": "epilogue_900_95d2d6e1e645b9cb9beafedd64d69616"
+    }
+}

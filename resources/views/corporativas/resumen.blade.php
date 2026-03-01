@@ -8,6 +8,10 @@
  <div class="p-3  mb-4 rounded">
 
 
+@if(session('error'))
+    <div class="alert alert-danger">{{ session('error')  }}  <a href="/admin/corporativas" >  <button class="btn btn-secondary" >Cancelar Inscripcion  </button></a></div>
+@endif
+
 
 @if(session('success'))
     <div class="alert alert-success">{{ session('success')  }}  <a href="/admin/corporativas" >  <button class="btn btn-secondary" >Cancelar Inscripcion  </button></a></div>
