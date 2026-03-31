@@ -33,6 +33,7 @@ $talla  = strtoupper(trim($row['talla'] ?? ''));
 $mapCarreras = [
     1 => 1, // inscripcion 1 = 15K (carrera_id 1)
     5 => 2, // inscripcion 5 = 21K (carrera_id 2)
+	10 => 3, // inscripcion 5 = 21K (carrera_id 2)
 ];
 
 if (!isset($mapCarreras[$inscripcionId])) {

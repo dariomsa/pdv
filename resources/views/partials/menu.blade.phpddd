@@ -145,35 +145,6 @@
                 </li>
             @endcan
 
-            @can('inscripciones_access')
-                <li class="nav-item nav-dropdown">
-                    <a class="nav-link nav-dropdown-toggle" href="#">
-                        <i class="fa-fw fas fa-sliders-h nav-icon">
-
-                        </i>
-                        AJUSTE
-                    </a>
-                    <ul class="nav-dropdown-items">
-                        <li class="nav-item">
-                            <a href="{{ route('admin.ajuste.index') }}" class="nav-link {{ request()->is('admin/ajuste') ? 'active' : '' }}">
-                                <i class="fa-fw fas fa-search nav-icon">
-
-                                </i>
-                                Normal
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('admin.ajuste_corporativas.index') }}" class="nav-link {{ request()->is('admin/ajuste-corporativas') ? 'active' : '' }}">
-                                <i class="fa-fw fas fa-building nav-icon">
-
-                                </i>
-                                Corporativas
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-            @endcan
-
 
  @can('corporativas_access')
 

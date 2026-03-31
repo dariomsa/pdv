@@ -31,6 +31,12 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
 	
 	Route::get('/tallas', 'InscripcionesController@tallasDisponibles')->name('tallas');
 	
+		
+    Route::post('inscripciones/gratuita', 'InscripcionesController@gratuita')->name('inscripciones.gratuita');
+	
+	
+	
+
 	
 
 
@@ -79,7 +85,19 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
     //Parametros
 
     Route::get('/parametros', 'ParametrosController@index')->name('parametros.index');
+    Route::get('/ajuste', 'AjusteController@index')->name('ajuste.index');
+    Route::get('/ajuste/reporte', 'AjusteController@reporte')->name('ajuste.reporte');
+    Route::get('/ajuste/buscar-documento', 'AjusteController@buscarDocumento')->name('ajuste.buscar_documento');
+    Route::post('/ajuste', 'AjusteController@store')->name('ajuste.store');
     Route::post('/categoria/por-fecha', 'CategoriaController@obtenerPorFechaNacimiento')->name('categoria.porFecha');
+	
+	
+	Route::get('/ajuste-corporativas', 'AjusteCorporativasController@index')->name('ajuste_corporativas.index');
+    Route::get('/ajuste-corporativas/buscar-documento', 'AjusteCorporativasController@buscarDocumento')->name('ajuste_corporativas.buscar_documento');
+    Route::post('/ajuste-corporativas', 'AjusteCorporativasController@store')->name('ajuste_corporativas.store');
+    Route::post('/categoria/por-fecha', 'CategoriaController@obtenerPorFechaNacimiento')->name('categoria.porFecha');
+	
+	
 
    // recibo
     Route::resource('recibo', 'ReciboController');
@@ -103,6 +121,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'mi
 
   Route::get('/facturar', 'FacturacionController@index')->name('facturar.index');
   Route::get('/facturar/{corp_id}', 'FacturacionController@show')->name('facturar.show');
+    Route::get('/facturar-ajuste-corporativas', 'FacturacionController@facturacionAjusteCorporativas')->name('facturar.ajuste_corporativas');
+  Route::get('/facturar-ajuste', 'FacturacionController@facturacionAjuste')->name('facturar.ajuste');
+
    
 
   Route::post('/buscar/base2024', [App\Http\Controllers\Base2024Controller::class, 'buscar']);
@@ -120,4 +141,3 @@ Route::prefix('admin/geo')->group(function () {
     Route::get('cantones',   [\App\Http\Controllers\Admin\GeoController::class, 'cantones']);
     Route::get('parroquias', [\App\Http\Controllers\Admin\GeoController::class, 'parroquias']);
 });
-

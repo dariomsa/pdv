@@ -65,6 +65,7 @@
                         <th>IVA</th>
                         <th>Total</th>
                         <th>Discapacidad</th>
+						 <th>Subtipo</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -94,6 +95,7 @@
                             <td>{{ $item['iva'] }}</td>
                             <td>{{ $item['total'] }}</td>
                             <td>{{ $item['discapacidad'] }}</td>
+							 <td>{{ $item['subtipo'] }}</td>
                         </tr>
                     @endforeach
                 </tbody>

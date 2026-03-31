@@ -92,7 +92,7 @@
                  <div class="form-group col-md-4">
     <label for="tipo_inscripcion">Tipo de Inscripción</label>
 <select class="form-control" id="tipo_inscripcion" name="tipo_inscripcion">
-  <option value="">Seleccione</option>
+
   @foreach($tiposInscripcion as $tipo)
             <option value="{{ $tipo->id }}"
                 {{ old('tipo_inscripcion') == $tipo->id ? 'selected' : '' }} data-carrera="{{ $tipo->carrera_id }}">
@@ -550,10 +550,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Rellenar campos según el JSON recibido (ejemplo)
               document.querySelector('[name="nombres"]').value = data.nombres ?? '';
                 document.querySelector('[name="apellidos"]').value = data.apellidos ?? '';
-                document.querySelector('[name="genero"]').value = data.genero?.startsWith('M') ? 'M' : 'F';
                 document.querySelector('[name="fecha_nacimiento"]').value = data.fecha_nacimiento?.split(' ')[0] ?? '';
-                document.querySelector('[name="talla"]').value = data.talla ?? '';
-                document.querySelector('[name="email"]').value = data.email ?? '';
+               document.querySelector('[name="email"]').value = data.email ?? '';
                 document.querySelector('[name="celular"]').value = data.telefono ?? '';
                   document.querySelector('[name="categoria"]').value = data.categoria ?? '';
                 // ... puedes agregar más campos
@@ -669,41 +667,44 @@ document.addEventListener("DOMContentLoaded", function () {
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-  // carrera 1: min edad_min = 16
-  // carrera 2: min edad_min = 18
-  // carrera 3: es por AÑO (2018-2019, 2016-2017...), el más nuevo es 2019
   const categoriasPorCarrera = {
-    1: { mode: 'age', min: 16 },      // 15K
-    2: { mode: 'age', min: 18 },      // 21K
-    3: { mode: 'year', maxYear: 2019 } // 5K (por año de nacimiento)
+    1: { mode: 'age',  min: 16 },                         // 15K
+    2: { mode: 'age',  min: 18 },                         // 21K
+    3: { mode: 'year', minYear: 2009, maxYear: 2019 }     // 5K
   };
 
-  const selTipo = document.getElementById('tipo_inscripcion');
+  const selTipo  = document.getElementById('tipo_inscripcion');
   const inpFecha = document.getElementById('fecha_nacimiento');
 
   function pad2(n){ return String(n).padStart(2,'0'); }
 
-  function setMaxFechaByCarrera(carreraId){
+  function setMinMaxFechaByCarrera(carreraId){
     const cfg = categoriasPorCarrera[Number(carreraId)];
-    if (!cfg) return; // si no está mapeado, no toca nada
+    if (!cfg) return;
 
+    let minDate = null;
     let maxDate = null;
 
     if (cfg.mode === 'age') {
-      // max = hoy - minEdad años (el más joven permitido)
+      // Solo max por edad mínima
       const hoy = new Date();
       const d = new Date(hoy.getFullYear() - cfg.min, hoy.getMonth(), hoy.getDate());
       maxDate = `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+
+      // Muy importante: si antes estuvo en mode year, quita el min
+      inpFecha.removeAttribute('min');
     } else if (cfg.mode === 'year') {
-      // max = fin del año más nuevo permitido
+      minDate = `${cfg.minYear}-01-01`;
       maxDate = `${cfg.maxYear}-12-31`;
     }
 
-    if (maxDate) {
-      inpFecha.max = maxDate;
+    if (minDate) inpFecha.min = minDate;
+    if (maxDate) inpFecha.max = maxDate;
 
-      // Si el usuario ya había puesto una fecha mayor al max, la limpiamos
-      if (inpFecha.value && inpFecha.value > maxDate) {
+    // Si el valor actual queda fuera del rango, limpiar
+    const v = inpFecha.value;
+    if (v) {
+      if ((minDate && v < minDate) || (maxDate && v > maxDate)) {
         inpFecha.value = '';
       }
     }
@@ -711,15 +712,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function carreraFromSelect(){
     const opt = selTipo.options[selTipo.selectedIndex];
-    return opt ? opt.dataset.carrera : null;
+    return opt ? (opt.dataset.carrera || null) : null;
   }
 
   // al cargar
-  setMaxFechaByCarrera(carreraFromSelect());
+  setMinMaxFechaByCarrera(carreraFromSelect());
 
   // al cambiar tipo_inscripcion
   selTipo.addEventListener('change', () => {
-    setMaxFechaByCarrera(carreraFromSelect());
+    setMinMaxFechaByCarrera(carreraFromSelect());
+    // opcional: resetear la fecha al cambiar tipo
+    // inpFecha.value = '';
   });
 
 });

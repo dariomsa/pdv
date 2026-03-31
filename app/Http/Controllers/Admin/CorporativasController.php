@@ -471,7 +471,12 @@ foreach ($participantes as $p) {
 $total = $subtotal + $iva_total;
 
 
-$formasPago = FormaPago::where('estado', 'A')->get();
+$user = auth()->user();
+
+$formasPago = FormaPago::when($user->id != 10, function ($q) {
+        $q->where('estado', 'A');
+    })
+    ->get();
 
 return view('corporativas.resumen', compact(
     'inscripcion',
@@ -544,7 +549,10 @@ public function finalizar(Request $request)
             $carreraId = 1;   // 15K
         } elseif ($tipoInscripcion->id == 5) {
             $carreraId = 2;   // 21K
-        } else {
+        }
+         elseif ($tipoInscripcion->id == 10) {
+            $carreraId = 3;   // 21K
+        } 		else {
             $carreraId = 1;   // por defecto 15K (ajusta si quieres)
         }
 

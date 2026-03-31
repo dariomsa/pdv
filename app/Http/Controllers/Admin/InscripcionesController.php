@@ -98,23 +98,23 @@ public function index(Request $request)
 
 public function create(Request $request)
 {
-	
-	 
+    $user = auth()->user();
+
     $tallasDisponibles = DB::table('inventario_total')
         ->where('stock_restante', '>', 0)
         ->orderBy('id')
         ->get();
-		
-		
 
     $paises = Pais::orderBy('id')->get();
 
-    // ✅ Tipos de inscripción desde BD
+    // ✅ TIPOS DE INSCRIPCIÓN SEGÚN USUARIO
     $tiposInscripcion = DB::table('inscripcion_tipo')
+        ->when($user->id != 10, function ($q) {
+            // 👉 SOLO ACTIVOS para todos menos el usuario 10
+            $q->where('estado', 1);
+        })
         ->orderBy('id')
         ->get();
-
-	
 
     return view('inscripciones.create', compact(
         'paises',
@@ -157,7 +157,7 @@ public function create(Request $request)
     // ✅ Discapacidad según tipo de inscripción (según tu Blade: 4 => conadis15k, 8 => conadis21k)
     $tipo = (int) $request->tipo_inscripcion;
     $esDiscapacidad15k = ($tipo === 4);
-    $esDiscapacidad21k = ($tipo === 8);
+    $esDiscapacidad21k = ($tipo === 9);
 
     // ✅ Validación condicional de subtipo
     if ($esDiscapacidad15k) {
@@ -298,7 +298,15 @@ public function resumen(Request $request)
         }
         $total = $subtotal+$iva_total;
 
-$formasPago = FormaPago::where('estado', 'A')->get();
+
+$user = auth()->user();
+
+$formasPago = FormaPago::when($user->id != 10, function ($q) {
+        $q->where('estado', 'A');
+    })
+    ->get();
+
+
 return view('inscripciones.resumen', compact(
     'inscripcion',
     'participantes',
@@ -311,6 +319,130 @@ return view('inscripciones.resumen', compact(
 
 
 }
+
+
+public function gratuita(Request $request)
+{
+    $inscripcionId = session('inscripcion_id');
+	
+	//dd( $inscripcionId);
+
+    if (!$inscripcionId) {
+        return redirect()->route('admin.inscripciones.create')
+            ->with('error', 'No hay inscripción activa.');
+    }
+
+    try {
+
+        $existing = Facturacion::where('inscripcion_id', $inscripcionId)->first();
+        if ($existing) {
+            return back()->with('error', 'Ya existe una factura asociada a esta inscripción.');
+        }
+
+        DB::beginTransaction();
+
+        // Pasar temporales a participantes definitivos
+        $temporales = ParticipanteTemporal::where('inscripcion_id', $inscripcionId)->get();
+        $facturaTipo = $temporales->count() > 1 ? 'Mult' : 'Ind';
+
+        foreach ($temporales as $temp) {
+            $data = $temp->toArray();
+            $data['factura'] = $facturaTipo;
+            unset($data['id']);
+            Participante::create($data);
+        }
+
+        // Obtener participantes definitivos
+        $participantes = Participante::with('tipoInscripcion')
+            ->where('inscripcion_id', $inscripcionId)
+            ->get();
+
+        // 🔴 TODO A CERO
+        $subtotal = 0;
+        $iva = 0;
+
+        // Crear factura (igual que finalizar)
+        $factura = Facturacion::create([
+            'inscripcion_id'         => $inscripcionId,
+            'fact_tipo_documento'    => $request->fact_tipo_documento,
+            'numero_doc_facturacion' => $request->numero_doc_facturacion,
+            'nombre_facturacion'     => $request->nombre_facturacion.' '.$request->apellido_facturacion,
+            'apellido_facturacion'   => $request->nombre_facturacion.' '.$request->apellido_facturacion,
+            'email_facturacion'      => $request->email_facturacion,
+            'telefono_facturacion'   => $request->telefono_facturacion,
+            'direccion_facturacion'  => $request->direccion_facturacion,
+            'nota_facturacion'       => 'INSCRIPCION GRATUITA',
+			'enviado_facturacion'    => 1,
+            'valor'                  => 0,
+            'iva'                    => 0,
+            'pagado'                 => 0
+        ]);
+
+        // Crear pago principal
+        $pagoPrincipal = Pago::create([
+            'inscripcion_id' => $inscripcionId,
+            'facturacion_id' => $factura->id,
+            'pago_id'        => $request->forma_pago,
+            'total'          => 0,
+            'referencia'     => $request->referencia ?? null,
+            'estado'         => 'PAGADO'
+        ]);
+
+        // Actualizar estado inscripción
+        Inscripcion::where('id', $inscripcionId)->update([
+            'estado' => 1
+        ]);
+
+        // Detalles + pago detalle + descuento stock
+        foreach ($participantes as $p) {
+
+            $valor = 0; // 🔴 TODO EN 0
+
+            FacturacionDetalle::create([
+                'facturacion_id'  => $factura->id,
+                'participante_id' => $p->id,
+                'valor'           => 0,
+                'pagado'          => 0
+            ]);
+
+            PagoDetalle::create([
+                'participante_id' => $p->id,
+                'forma_pago_id'   => $request->forma_pago,
+                'pagos_id'        => $pagoPrincipal->id,
+                'referencia'      => $request->referencia ?? null,
+                'monto'           => 0,
+                'estado'          => 'A',
+                'created_by_id'   => auth()->id(),
+            ]);
+
+            // 🔵 Stock se descuenta igual
+            DB::table('inventario_total')
+                ->where('carrera_id', (int)($p->tipoInscripcion->carrera_id ?? 0))
+                ->where('genero', $p->genero)
+                ->where('talla', $p->talla)
+                ->where('stock_restante', '>', 0)
+                ->decrement('stock_restante', 1);
+        }
+
+        DB::commit();
+
+  
+
+        session()->forget('inscripcion_id');
+
+        return redirect()->route('admin.inscripciones.index')
+       ->with('success', 'Inscripción GRATUITA completada exitosamente.');
+
+    } catch (\Exception $e) {
+
+        DB::rollBack();
+
+        return redirect()->back()
+            ->with('error', 'Error al finalizar gratuita: ' . $e->getMessage());
+    }
+}
+
+
 
 
 public function finalizar(Request $request)
@@ -370,8 +502,8 @@ public function finalizar(Request $request)
             'inscripcion_id'         => $inscripcionId,
             'fact_tipo_documento'    => $request->fact_tipo_documento,
             'numero_doc_facturacion' => $request->numero_doc_facturacion,
-            'nombre_facturacion'     => $request->nombre_facturacion,
-            'apellido_facturacion'   => $request->apellido_facturacion,
+            'nombre_facturacion'     => $request->nombre_facturacion.' '.$request->apellido_facturacion,
+            'apellido_facturacion'   => $request->nombre_facturacion.' '.$request->apellido_facturacion,
             'email_facturacion'      => $request->email_facturacion,
             'telefono_facturacion'   => $request->telefono_facturacion,
             'direccion_facturacion'  => $request->direccion_facturacion,
@@ -429,6 +561,15 @@ public function finalizar(Request $request)
         }
 
         DB::commit();
+
+    DB::statement("
+        UPDATE participantes p
+        JOIN base2024 b
+            ON p.numero_documento = b.cedula
+        SET p.corral = TRIM(b.corral) WHERE p.id >9410
+    ");
+		
+		session(['recibo' => $p->id]);
 
         session()->forget('inscripcion_id');
 

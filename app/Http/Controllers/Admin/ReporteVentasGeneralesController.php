@@ -77,7 +77,9 @@ public function index(Request $request)
                 'sub_total' => $detalle ? number_format($detalle->valor / 1.15, 2) : 'ND',
                 'iva' => $detalle ? number_format($detalle->valor - ($detalle->valor / 1.15), 2) : 'ND',
                 'total' => $detalle->valor ?? 'ND',
-                'discapacidad' => 'ND',
+               'discapacidad' => $p->discapacidad == 1 ? 'SI' : 'NO',
+			   'subtipo' => $p->sub_tipo,
+			   
             ];
         });
 
@@ -134,7 +136,7 @@ public function index(Request $request)
     $mapTiposCorpPorCarrera = [
         1 => [1], // carrera 15K => tipo corporativo id 1
         2 => [5], // carrera 21K => tipo corporativo id 5
-        // 3 => [??], // si algún día hay MINI corporativa, pones el id aquí
+        3 => [10], // si algún día hay MINI corporativa, pones el id aquí
     ];
 
     $tiposCorpIds = !empty($carrera) ? ($mapTiposCorpPorCarrera[(int)$carrera] ?? []) : [];
@@ -182,6 +184,7 @@ public function index(Request $request)
                 'iva' => $p->iva ?? '0.00',
                 'total' => $p->valor ?? '0.00',
                 'discapacidad' => $p->discapacidad == 1 ? 'SI' : 'NO',
+				 'subtipo' =>'',
             ];
         });
 

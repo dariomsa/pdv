@@ -14,19 +14,19 @@ class ReciboController
   
   public function index(Request $request)
 {
-    $tmps = Participante::select(
-            'participantes.*',
-            'participantes.id as participante_id',
-            'participantes.created_at as creado',
-            'facturacion.*',
-            'users.name',
-            'ti.nombre as carrera_nombre' // <-- nombre de la carrera
-        )
-        ->join('facturacion', 'participantes.id', '=', 'facturacion.inscripcion_id')
-        ->join('users', 'participantes.created_by_id', '=', 'users.id')
-        ->leftJoin('inscripcion_tipo as ti', 'ti.id', '=', 'participantes.tipo_inscripcion') // <-- ajusta el campo
-        ->where('participantes.id', $request->id)
-        ->first();
+ $tmps = Participante::select(
+        'participantes.*',
+        'participantes.id as participante_id',
+        'participantes.created_at as creado',
+        'facturacion.*',
+        'users.name',
+        'ti.nombre as carrera_nombre'
+    )
+    ->join('facturacion', 'participantes.inscripcion_id', '=', 'facturacion.inscripcion_id') // ✅ AQUÍ
+    ->join('users', 'participantes.created_by_id', '=', 'users.id')
+    ->leftJoin('inscripcion_tipo as ti', 'ti.id', '=', 'participantes.tipo_inscripcion')
+    ->where('participantes.id', $request->id)
+    ->first();
 
     if (!$tmps) {
         return response('NO DATA', 404);

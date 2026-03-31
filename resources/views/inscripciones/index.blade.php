@@ -14,8 +14,8 @@
 			           @if(Session::has('flash_message'))
 							<div class="alert alert-danger">{{ Session::get('flash_message') }}</div>
 						@endif
-                        @if(Session::has('success'))
-							<div class="alert alert-success">{{ Session::get('success') }}  <a target="_blank" href="/admin/recibo?id={{ Session::get('id_ins') }}">
+                        @if(Session::has('recibo'))
+							<div class="alert alert-success">{{ Session::get('recibo') }}  <a target="_blank" href="/admin/recibo?id={{ Session::get('recibo') }}">
                            <i class="nav-icon fas fa-fw fa-print" style="font-size:25px"></i></a></div> 
 					 
 						
@@ -83,6 +83,7 @@
                     <th>IVA</th>
                     <th>Total</th>
                     <th>DISCAPACIDAD</th>
+					    <th></th>
                 </tr>
             </thead>
 					
@@ -177,6 +178,10 @@
 
     <td  class="editable" data-id="{{ $participante->id }}" data-column="discapacidad">
         {{ $participante->discapacidad ?? 'ND' }}
+    </td>
+	<td >
+       <a target="_blank" href="/admin/recibo?id={{ $participante->id }}">
+                           <i class="nav-icon fas fa-fw fa-print" style="font-size:25px"></i></a>
     </td>
 </tr>
 @endforeach

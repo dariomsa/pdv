@@ -184,10 +184,21 @@ Log::info('factor: ' . $factor);
 
             //descontar stock
 
-            DB::table('inventario_total')
-            ->where('talla', $participante->talla)
-            ->where('stock_restante', '>', 0)
-            ->decrement('stock_restante', 1);
+           // Obtener carrera_id desde tabla inscripcion_tipos
+$tipo = \App\Models\InscripcionTipo::find($participante->tipo_inscripcion);
+
+if (!$tipo) {
+    throw new \Exception("Tipo inscripción inválido: {$participante->tipo_inscripcion}");
+}
+
+$carreraId = $tipo->carrera_id;
+
+// Descontar stock correctamente
+DB::table('inventario_total')
+    ->where('talla', $participante->talla)
+    ->where('genero', $participante->genero)
+    ->where('carrera_id', $carreraId)
+    ->decrement('stock_restante', 1);
 
 
             }

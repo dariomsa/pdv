@@ -17,67 +17,48 @@ use App\CierreCajaDetalle;
 
 class CajaDetalleController extends Controller
 {
-    public function index()
-    {
-        abort_if(Gate::denies('cierre_caja_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
-		
-		
-		
-		
-		$cierrecaja = DB::select('
-			SELECT cierre_caja.`id`,users.`name`,cierre_caja.fecha,cierre_caja.`secuencia`,
-			tmps.`tipo_inscripcion`,facturacions.`valor`,facturacions.`clave_accesso`,
-			formas_pago.`metodo_pago`,pagos.`referencia`,pagos.`monto`
-			FROM `cierre_caja` 
-			INNER JOIN tmps 
-			INNER JOIN `facturacions` 
-			INNER JOIN `pagos`
-			INNER JOIN users
-			INNER JOIN `formas_pago`
-			WHERE cierre_caja.`id`=tmps.`id_cierre_caja`
-			AND facturacions.`id_inscrito`=tmps.id
-			AND pagos.`id_inscripcion`=tmps.id
-			AND users.id=tmps.`created_by_id`
-			AND `formas_pago`.id=pagos.`id_pago`
-AND tmps.created_by_id='.auth()->user()->id.' 
-ORDER BY cierre_caja.id DESC
-			')	;
-			
-		
-		$fecha_desde = isset($_GET['fecha_desde']) &&  $_GET['fecha_desde'] != '' ? $_GET['fecha_desde'] : date('Y-m-d');
-        $fecha_hasta = isset($_GET['fecha_hasta']) &&  $_GET['fecha_hasta'] != '' ? $_GET['fecha_hasta'] : date('Y-m-d');
-		
-		$isAdmin = auth()->user()->roles->contains(3);
-		$isContabilidad = auth()->user()->roles->contains(5);
+ public function index(Request $request)
+{
+    abort_if(Gate::denies('cierre_caja_access'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-		if ($isAdmin || $isContabilidad) {				
-			$cierrecaja = DB::select('
-			SELECT cierre_caja.`id`,users.`name`,cierre_caja.fecha,cierre_caja.`secuencia`,
-			tmps.`tipo_inscripcion`,facturacions.`valor`,facturacions.`clave_accesso`,
-			formas_pago.`metodo_pago`,pagos.`referencia`,pagos.`monto`
-			FROM `cierre_caja` 
-			INNER JOIN tmps 
-			INNER JOIN `facturacions` 
-			INNER JOIN `pagos`
-			INNER JOIN users
-			INNER JOIN `formas_pago`
-			WHERE cierre_caja.`id`=tmps.`id_cierre_caja`
-			AND facturacions.`id_inscrito`=tmps.id
-			AND pagos.`id_inscripcion`=tmps.id
-			AND users.id=tmps.`created_by_id`
-			AND `formas_pago`.id=pagos.`id_pago`
-AND cierre_caja.`fecha` BETWEEN "'.$fecha_desde.'" AND "'.$fecha_hasta.'" 
-ORDER BY cierre_caja.id DESC
-			')
-			;
+    $fecha_desde = $request->get('fecha_desde', date('Y-m-d'));
+    $fecha_hasta = $request->get('fecha_hasta', date('Y-m-d'));
 
-			//dd($cierrecaja);
-		} else {
-					
-		}
-		
-		return view('admin.detalleCaja.index', compact('cierrecaja','fecha_desde', 'fecha_hasta'));
+    $user = auth()->user();
+    $isAdmin = $user->roles->contains(3);
+    $isContabilidad = $user->roles->contains(5);
+
+    $query = DB::table('cierre_caja')
+        ->join('inscripciones', 'cierre_caja.id', '=', 'inscripciones.id_cierre_caja')
+        ->leftJoin('facturacion', 'facturacion.inscripcion_id', '=', 'inscripciones.id')
+        ->join('pagos', 'pagos.inscripcion_id', '=', 'inscripciones.id')
+        ->join('users', 'users.id', '=', 'inscripciones.created_by_id')
+        ->leftJoin('formas_pago', 'formas_pago.id', '=', 'pagos.pago_id')
+        ->select(
+            'cierre_caja.id',
+            'users.name',
+            'cierre_caja.fecha',
+            'cierre_caja.secuencia',
+           
+            'facturacion.valor',
+            'facturacion.clave_acceso',
+            'formas_pago.metodo_pago',
+            'pagos.referencia',
+            'pagos.total'
+        );
+
+    if ($isAdmin || $isContabilidad) {
+        $query->whereBetween('cierre_caja.fecha', [$fecha_desde, $fecha_hasta]);
+    } else {
+        $query->where('inscripciones.created_by_id', auth()->id());
     }
+
+    $cierrecaja = $query
+        ->orderByDesc('cierre_caja.id')
+        ->get();
+
+    return view('detalleCaja.index', compact('cierrecaja', 'fecha_desde', 'fecha_hasta'));
+}
 
     public function create()
     {
