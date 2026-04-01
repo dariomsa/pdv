@@ -533,10 +533,7 @@ public function finalizar(Request $request)
     $data = $temp->toArray();
     unset($data['id']); // Eliminar ID para evitar conflictos de duplicado
 
-    if (ParticipanteHelper::yaInscrito($data['numero_documento'])) {
-       throw new \Exception('El participante '.$data['numero_documento'].' ya está inscrito en otra modalidad.');
-    }
-	
+  
 	
 
 
@@ -568,13 +565,30 @@ public function finalizar(Request $request)
     ) ? 1 : 0;
 
 // 3) Categoría por edad + carrera
+               
+         $categoria = null;
+
+        if ($carreraId === 3) {
+            $anio = (int) $fechaNacimiento->format('Y');
+
+            $categoria = Categoria::where('carrera_id', $carreraId)
+                ->where('edad_min', '<=', $anio)
+                ->where('edad_max', '>=', $anio)
+                ->orderBy('edad_min', 'asc')
+                ->first();
+        } else {
             $categoria = Categoria::where('carrera_id', $carreraId)
                 ->where('edad_min', '<=', $edad)
                 ->where(function ($q) use ($edad) {
                     $q->whereNull('edad_max')
                       ->orWhere('edad_max', '>=', $edad);
                 })
+                ->orderBy('edad_min', 'asc')
                 ->first();
+        }
+
+   
+
 
             $data['categoria'] = $categoria->nombre ?? 'SIN CATEGORÍA';
 
