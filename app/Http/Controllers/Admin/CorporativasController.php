@@ -665,16 +665,7 @@ public function finalizar(Request $request)
             // Detalles por participante
        foreach ($participantes as $p) {
 
-    // carrera_id según tipo_inscripcion (1 => 15K, 5 => 21K)
-    $tipo = InscripcionTipoCorporativa::findOrFail($p->tipo_inscripcion);
-
-    if ($tipo->id == 1) {
-        $carreraId = 1; // 15K
-    } elseif ($tipo->id == 5) {
-        $carreraId = 2; // 21K
-    } else {
-        $carreraId = 1; // default
-    }
+    
 
     DB::table('inventario_total')
         ->where('talla', $p->talla)
@@ -701,7 +692,8 @@ public function finalizar(Request $request)
 public function gratuitas(Request $request)
 {
 
-          $request->validate([
+          
+            $request->validate([
            
             'numero_documento' => 'required',
             'razon_social' => 'required',
@@ -729,6 +721,7 @@ public function gratuitas(Request $request)
         try {
             // Verificar si ya existe facturación para la inscripción
                  
+
             DB::beginTransaction();
             
             $temporales = ParticipanteCorporativaTemporal::where('inscripcion_id', $inscripcionId)->get();
@@ -737,13 +730,26 @@ public function gratuitas(Request $request)
    foreach ($temporales as $temp) {
     $data = $temp->toArray();
     unset($data['id']); // Eliminar ID para evitar conflictos de duplicado
-//verificar inscriots
+
+  
+	
 
 
+        // Asumo que InscripcionCorporativa tiene el campo tipo_inscripcion_id
+        $tipoInscripcion = InscripcionTipoCorporativa::findOrFail($data['tipo_inscripcion']);
 
-    if (ParticipanteHelper::yaInscrito($data['numero_documento'])) {
-        return redirect()->back()->with('success', 'El participante '.$data['numero_documento']. '  ya está inscrito en otra modalidad.');
-    }
+        // 1 = CORPORATIVAS 15K, 5 = CORPORATIVAS 21K
+        // Mapeo a carrera_id: 1 => 15K, 2 => 21K
+        if ($tipoInscripcion->id == 1) {
+            $carreraId = 1;   // 15K
+        } elseif ($tipoInscripcion->id == 5) {
+            $carreraId = 2;   // 21K
+        }
+         elseif ($tipoInscripcion->id == 10) {
+            $carreraId = 3;   // 21K
+        } 		else {
+            $carreraId = 1;   // por defecto 15K (ajusta si quieres)
+        }
 
 
     // Edad y tercera edad
@@ -756,43 +762,52 @@ public function gratuitas(Request $request)
         isset($data['discapacidad']) && strtoupper(trim($data['discapacidad'])) === 'SI'
     ) ? 1 : 0;
 
-    // Categoría
-    $categoria = Categoria::where('edad_min', '<=', $edad)
-        ->where(function ($q) use ($edad) {
-            $q->whereNull('edad_max')->orWhere('edad_max', '>=', $edad);
-        })->first();
-    $data['categoria'] = $categoria->nombre ?? 'SIN CATEGORÍA';
+// 3) Categoría por edad + carrera
+               
+         $categoria = null;
+
+        if ($carreraId === 3) {
+            $anio = (int) $fechaNacimiento->format('Y');
+
+            $categoria = Categoria::where('carrera_id', $carreraId)
+                ->where('edad_min', '<=', $anio)
+                ->where('edad_max', '>=', $anio)
+                ->orderBy('edad_min', 'asc')
+                ->first();
+        } else {
+            $categoria = Categoria::where('carrera_id', $carreraId)
+                ->where('edad_min', '<=', $edad)
+                ->where(function ($q) use ($edad) {
+                    $q->whereNull('edad_max')
+                      ->orWhere('edad_max', '>=', $edad);
+                })
+                ->orderBy('edad_min', 'asc')
+                ->first();
+        }
+
+   
+
+
+            $data['categoria'] = $categoria->nombre ?? 'SIN CATEGORÍA';
+
+
+    // Descuento si tercera edad o discapacidad
+    //$tipoInscripcion = InscripcionTipoCorporativa::where('id', 1)->first();
+    $valorBase = $tipoInscripcion->valor ?? 0;
+    $aplicaDescuento = $data['tercera_edad'] == 1 || $data['discapacidad'] == 1;
+    $valorFinal = $aplicaDescuento ? $valorBase / 2 : $valorBase;
 
     // Guardar si tienes campos en tabla
     $data['valor'] = 0;
 
     // Puedes usar $valorFinal para cálculos o guardarlo si es necesario
-    $data['valor']= 0;
-  
+ 
     $data['iva']= 0;
 
     //fecha
 
     $data['created_at'] = $temp->created_at;
     $data['updated_at'] = $temp->updated_at;
-
- 
- 
-// --- CORRAL: si EXISTE en base2024 → asignar 'A'; si NO existe → DEFAULT ---
-$cedula = trim((string) ($data['numero_documento'] ?? ''));
-
-if ($cedula !== '') {
-
-    $existe = DB::table('base2024')
-        ->where('CEDULA', $cedula)
-        ->exists();
-
-    if ($existe) {
-        $data['corral'] = 'A';
-    } else {
-        unset($data['corral']); // aplica DEFAULT (CROP.)
-    }
-}
 
  
     // Crear participante
@@ -808,16 +823,16 @@ if ($cedula !== '') {
                 
 
             $subtotal = $participantes->sum(function ($p) {
-                return $p->tipoInscripcion->valor ?? 0;
+                return $p->valor ?? 0;
             });
 
            
 
             $iva = $participantes->sum(function ($p) {
-                return $p->tipoInscripcion->iva ?? 0;
+                return $p->iva ?? 0;
             });
        
-            $data= [
+           $data= [
                 'inscripcion_id'         => $inscripcionId ,
                 'tipo_documento'    => $request->tipo_documento,
                 'numero_documento' => $request->numero_documento,
@@ -836,31 +851,33 @@ if ($cedula !== '') {
 
               // dd($data); 
             $factura =FacturacionCorporativa::create ($data);
+            $id_facturacion=$factura->id;
 
      
             // Actualizar estado de la inscripción
             InscripcionCorporativa::where('id', $inscripcionId)->update(['estado' => 1]);
 
             // Detalles por participante
-            foreach ($participantes as $p) {
-                
-             DB::table('inventario_total')
-            ->where('talla', $p->talla)
-          //  ->where('stock_restante', '>', 0)
-            ->decrement('stock_restante', 1);
+       foreach ($participantes as $p) {
 
-         
-            }
+    
 
+    DB::table('inventario_total')
+        ->where('talla', $p->talla)
+        ->where('genero', $p->genero)
+        ->where('carrera_id', $carreraId)
+        ->decrement('stock_restante', 1);
+}
 
         DB::commit();
+        Session::put('establecimiento', $id_facturacion);
         session()->forget('inscripcion_id');
 
         return redirect()->route('admin.corporativas.index')->with('success', 'Inscripción completada exitosamente.');
 
     } catch (\Exception $e) {
         DB::rollBack();
-        session()->forget('inscripcion_id');
+       // session()->forget('inscripcion_id');
         return redirect()->back()->with('error', 'Error al finalizar: ' . $e->getMessage());
     }
 
