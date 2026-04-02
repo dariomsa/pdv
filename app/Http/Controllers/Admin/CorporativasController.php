@@ -20,7 +20,6 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\helpers\ParticipanteHelper;
 use Session;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 
 class CorporativasController extends Controller
@@ -495,246 +494,196 @@ return view('corporativas.resumen', compact(
 
 public function finalizar(Request $request)
 {
-    Log::info('CorporativasController@finalizar iniciado', [
-        'user_id' => auth()->id(),
-        'inscripcion_id_session' => session('inscripcion_id'),
-        'payload' => $request->except(['_token']),
-    ]);
 
-    $request->validate([
-        'numero_documento' => 'required',
-        'razon_social' => 'required',
-        'empresa' => 'required',
-        'email' => 'required',
-        'telefono' => 'required',
-        'direccion' => 'required',
-    ]);
+            $request->validate([
+           
+            'numero_documento' => 'required',
+            'razon_social' => 'required',
+            'empresa' => 'required',
+            'email' => 'required',
+            'telefono' => 'required',
+            'direccion' => 'required',
+        
+                 
 
+          
+        ]);
+
+ 
+
+////
     $inscripcionId = session('inscripcion_id');
 
+              
     if (!$inscripcionId) {
-        Log::warning('CorporativasController@finalizar sin inscripción activa', [
-            'user_id' => auth()->id(),
-        ]);
         return redirect()->route('admin.corporativas.create')->with('error', 'No hay inscripción activa.');
     }
 
-    try {
-        Log::info('CorporativasController@finalizar abriendo transacción', [
-            'inscripcion_id' => $inscripcionId,
-        ]);
+  
+        try {
+            // Verificar si ya existe facturación para la inscripción
+                 
 
-        DB::beginTransaction();
+            DB::beginTransaction();
+            
+            $temporales = ParticipanteCorporativaTemporal::where('inscripcion_id', $inscripcionId)->get();
+                 
+            
+   foreach ($temporales as $temp) {
+    $data = $temp->toArray();
+    unset($data['id']); // Eliminar ID para evitar conflictos de duplicado
 
-        $temporales = ParticipanteCorporativaTemporal::where('inscripcion_id', $inscripcionId)->get();
+  
+	
 
-        Log::info('CorporativasController@finalizar temporales cargados', [
-            'inscripcion_id' => $inscripcionId,
-            'temporales_count' => $temporales->count(),
-        ]);
 
-        foreach ($temporales as $temp) {
-            $data = $temp->toArray();
-            unset($data['id']);
+        // Asumo que InscripcionCorporativa tiene el campo tipo_inscripcion_id
+        $tipoInscripcion = InscripcionTipoCorporativa::findOrFail($data['tipo_inscripcion']);
 
-            Log::info('CorporativasController@finalizar procesando temporal', [
-                'inscripcion_id' => $inscripcionId,
-                'temporal_id' => $temp->id,
-                'numero_documento' => $data['numero_documento'] ?? null,
-                'tipo_inscripcion' => $data['tipo_inscripcion'] ?? null,
-            ]);
+        // 1 = CORPORATIVAS 15K, 5 = CORPORATIVAS 21K
+        // Mapeo a carrera_id: 1 => 15K, 2 => 21K
+        if ($tipoInscripcion->id == 1) {
+            $carreraId = 1;   // 15K
+        } elseif ($tipoInscripcion->id == 5) {
+            $carreraId = 2;   // 21K
+        }
+         elseif ($tipoInscripcion->id == 10) {
+            $carreraId = 3;   // 21K
+        } 		else {
+            $carreraId = 1;   // por defecto 15K (ajusta si quieres)
+        }
 
-            $tipoInscripcion = InscripcionTipoCorporativa::findOrFail($data['tipo_inscripcion']);
 
-            Log::info('CorporativasController@finalizar tipo inscripción resuelto', [
-                'temporal_id' => $temp->id,
-                'tipo_inscripcion_id' => $tipoInscripcion->id,
-                'tipo_inscripcion_nombre' => $tipoInscripcion->nombre ?? null,
-                'valor' => $tipoInscripcion->valor ?? null,
-                'iva_rate' => $tipoInscripcion->iva ?? null,
-            ]);
+    // Edad y tercera edad
+    $fechaNacimiento = \Carbon\Carbon::parse($data['fecha_nacimiento']);
+    $edad = $fechaNacimiento->age;
+    $data['tercera_edad'] = $edad >= 65 ? 1 : 0;
 
-            if ($tipoInscripcion->id == 1) {
-                $carreraId = 1;
-            } elseif ($tipoInscripcion->id == 5) {
-                $carreraId = 2;
-            } elseif ($tipoInscripcion->id == 10) {
-                $carreraId = 3;
-            } else {
-                $carreraId = 1;
-            }
+    // Discapacidad: convertir a 0 o 1
+    $data['discapacidad'] = (
+        isset($data['discapacidad']) && strtoupper(trim($data['discapacidad'])) === 'SI'
+    ) ? 1 : 0;
 
-            Log::info('CorporativasController@finalizar carrera resuelta', [
-                'temporal_id' => $temp->id,
-                'carrera_id' => $carreraId,
-            ]);
+// 3) Categoría por edad + carrera
+               
+         $categoria = null;
 
-            $fechaNacimiento = \Carbon\Carbon::parse($data['fecha_nacimiento']);
-            $edad = $fechaNacimiento->age;
-            $data['tercera_edad'] = $edad >= 65 ? 1 : 0;
-            $data['discapacidad'] = (
-                isset($data['discapacidad']) && strtoupper(trim($data['discapacidad'])) === 'SI'
-            ) ? 1 : 0;
+        if ($carreraId === 3) {
+            $anio = (int) $fechaNacimiento->format('Y');
 
-            $categoria = null;
+            $categoria = Categoria::where('carrera_id', $carreraId)
+                ->where('edad_min', '<=', $anio)
+                ->where('edad_max', '>=', $anio)
+                ->orderBy('edad_min', 'asc')
+                ->first();
+        } else {
+            $categoria = Categoria::where('carrera_id', $carreraId)
+                ->where('edad_min', '<=', $edad)
+                ->where(function ($q) use ($edad) {
+                    $q->whereNull('edad_max')
+                      ->orWhere('edad_max', '>=', $edad);
+                })
+                ->orderBy('edad_min', 'asc')
+                ->first();
+        }
 
-            if ($carreraId === 3) {
-                $anio = (int) $fechaNacimiento->format('Y');
+   
 
-                $categoria = Categoria::where('carrera_id', $carreraId)
-                    ->where('edad_min', '<=', $anio)
-                    ->where('edad_max', '>=', $anio)
-                    ->orderBy('edad_min', 'asc')
-                    ->first();
-            } else {
-                $categoria = Categoria::where('carrera_id', $carreraId)
-                    ->where('edad_min', '<=', $edad)
-                    ->where(function ($q) use ($edad) {
-                        $q->whereNull('edad_max')
-                          ->orWhere('edad_max', '>=', $edad);
-                    })
-                    ->orderBy('edad_min', 'asc')
-                    ->first();
-            }
 
             $data['categoria'] = $categoria->nombre ?? 'SIN CATEGORÍA';
 
-            Log::info('CorporativasController@finalizar categoría calculada', [
-                'temporal_id' => $temp->id,
-                'edad' => $edad,
-                'categoria' => $data['categoria'],
-                'tercera_edad' => $data['tercera_edad'],
-                'discapacidad' => $data['discapacidad'],
-            ]);
 
-            $valorBase = $tipoInscripcion->valor ?? 0;
-            $aplicaDescuento = $data['tercera_edad'] == 1 || $data['discapacidad'] == 1;
-            $valorFinal = $aplicaDescuento ? $valorBase / 2 : $valorBase;
-            $valorIVA = $valorFinal / (1 + $tipoInscripcion->iva);
-            $iva = $valorFinal - $valorIVA;
+    // Descuento si tercera edad o discapacidad
+    //$tipoInscripcion = InscripcionTipoCorporativa::where('id', 1)->first();
+    $valorBase = $tipoInscripcion->valor ?? 0;
+    $aplicaDescuento = $data['tercera_edad'] == 1 || $data['discapacidad'] == 1;
+    $valorFinal = $aplicaDescuento ? $valorBase / 2 : $valorBase;
 
-            $data['valor'] = $valorFinal;
-            $data['iva'] = $iva;
-            $data['created_at'] = $temp->created_at;
-            $data['updated_at'] = $temp->updated_at;
+    // Guardar si tienes campos en tabla
+    $data['valor'] = $valorFinal;
 
-            Log::info('CorporativasController@finalizar valores calculados', [
-                'temporal_id' => $temp->id,
-                'valor_base' => $valorBase,
-                'aplica_descuento' => $aplicaDescuento,
-                'valor_final' => $valorFinal,
-                'iva' => $iva,
-            ]);
+    // Puedes usar $valorFinal para cálculos o guardarlo si es necesario
+    $data['valor']= $valorFinal;
+   
+    $ValorIVA = $valorFinal/ (1 + $tipoInscripcion->iva);
+    $iva=$valorFinal-$ValorIVA;
+    $data['iva']= $iva;
 
-            $participante = ParticipanteCorporativa::create($data);
+    //fecha
 
-            Log::info('CorporativasController@finalizar participante creado', [
-                'participante_id' => $participante->id,
-                'inscripcion_id' => $participante->inscripcion_id,
-                'numero_documento' => $participante->numero_documento,
-                'valor' => $participante->valor,
-                'iva' => $participante->iva,
-            ]);
-        }
+    $data['created_at'] = $temp->created_at;
+    $data['updated_at'] = $temp->updated_at;
 
-        $participantes = ParticipanteCorporativa::with('tipoInscripcion')
-            ->where('inscripcion_id', $inscripcionId)
-            ->get();
+ 
+    // Crear participante
+    $participante = ParticipanteCorporativa::create($data);
+}         
+   
+            
 
-        Log::info('CorporativasController@finalizar participantes definitivos cargados', [
-            'inscripcion_id' => $inscripcionId,
-            'participantes_count' => $participantes->count(),
-        ]);
+           $participantes = ParticipanteCorporativa::with('tipoInscripcion')
+                ->where('inscripcion_id', $inscripcionId)
+                ->get();
+              
+                
 
-        $subtotal = $participantes->sum(function ($p) {
-            return $p->valor ?? 0;
-        });
+            $subtotal = $participantes->sum(function ($p) {
+                return $p->valor ?? 0;
+            });
 
-        $iva = $participantes->sum(function ($p) {
-            return $p->iva ?? 0;
-        });
+           
 
-        Log::info('CorporativasController@finalizar totales calculados', [
-            'inscripcion_id' => $inscripcionId,
-            'subtotal' => $subtotal,
-            'iva' => $iva,
-            'total' => $subtotal,
-        ]);
+            $iva = $participantes->sum(function ($p) {
+                return $p->iva ?? 0;
+            });
+       
+            $data= [
+                'inscripcion_id'         => $inscripcionId ,
+                'tipo_documento'    => $request->tipo_documento,
+                'numero_documento' => $request->numero_documento,
+                'razon_social'     => $request->razon_social,
+                'empresa'   => $request->empresa,
+                'email'      => $request->email,
+                'telefono'   => $request->telefono,
+                'direccion'  => $request->direccion,
+                'nota_adicional'       => $request->nota_adicional,
+                'valor'                  => $subtotal,
+                'iva'                    => $iva,
+                'pagado'                 => 1 ,
+                'forma_pago_id'  => $request->forma_pago,
+                'referencia'  => $request->referencia,
+            ];
 
-        $data = [
-            'inscripcion_id' => $inscripcionId,
-            'tipo_documento' => $request->tipo_documento,
-            'numero_documento' => $request->numero_documento,
-            'razon_social' => $request->razon_social,
-            'empresa' => $request->empresa,
-            'email' => $request->email,
-            'telefono' => $request->telefono,
-            'direccion' => $request->direccion,
-            'nota_adicional' => $request->nota_adicional,
-            'valor' => $subtotal,
-            'iva' => $iva,
-            'pagado' => 1,
-            'forma_pago_id' => $request->forma_pago,
-            'referencia' => $request->referencia,
-        ];
+              // dd($data); 
+            $factura =FacturacionCorporativa::create ($data);
+            $id_facturacion=$factura->id;
 
-        Log::info('CorporativasController@finalizar creando factura corporativa', [
-            'inscripcion_id' => $inscripcionId,
-            'factura_data' => $data,
-        ]);
+     
+            // Actualizar estado de la inscripción
+            InscripcionCorporativa::where('id', $inscripcionId)->update(['estado' => 1]);
 
-        $factura = FacturacionCorporativa::create($data);
-        $id_facturacion = $factura->id;
+            // Detalles por participante
+       foreach ($participantes as $p) {
 
-        Log::info('CorporativasController@finalizar factura creada', [
-            'facturacion_id' => $id_facturacion,
-            'inscripcion_id' => $inscripcionId,
-        ]);
+    // carrera_id según tipo_inscripcion (1 => 15K, 5 => 21K)
+    $tipo = InscripcionTipoCorporativa::findOrFail($p->tipo_inscripcion);
 
-        InscripcionCorporativa::where('id', $inscripcionId)->update(['estado' => 1]);
+    if ($tipo->id == 1) {
+        $carreraId = 1; // 15K
+    } elseif ($tipo->id == 5) {
+        $carreraId = 2; // 21K
+    } else {
+        $carreraId = 1; // default
+    }
 
-        Log::info('CorporativasController@finalizar inscripción actualizada', [
-            'inscripcion_id' => $inscripcionId,
-            'estado' => 1,
-        ]);
-
-        foreach ($participantes as $p) {
-            $tipo = InscripcionTipoCorporativa::findOrFail($p->tipo_inscripcion);
-
-            if ($tipo->id == 1) {
-                $carreraId = 1;
-            } elseif ($tipo->id == 5) {
-                $carreraId = 2;
-            } 
-            elseif ($tipo->id == 10) {
-                $carreraId = 3;
-            } 
-            else {
-                $carreraId = 1;
-            }
-
-            Log::info('CorporativasController@finalizar descontando inventario', [
-                'participante_id' => $p->id,
-                'numero_documento' => $p->numero_documento,
-                'talla' => $p->talla,
-                'genero' => $p->genero,
-                'carrera_id' => $carreraId,
-            ]);
-
-            DB::table('inventario_total')
-                ->where('talla', $p->talla)
-                ->where('genero', $p->genero)
-                ->where('carrera_id', $carreraId)
-                ->decrement('stock_restante', 1);
-        }
+    DB::table('inventario_total')
+        ->where('talla', $p->talla)
+        ->where('genero', $p->genero)
+        ->where('carrera_id', $carreraId)
+        ->decrement('stock_restante', 1);
+}
 
         DB::commit();
-
-        Log::info('CorporativasController@finalizar commit realizado', [
-            'inscripcion_id' => $inscripcionId,
-            'facturacion_id' => $id_facturacion,
-        ]);
-
         Session::put('establecimiento', $id_facturacion);
         session()->forget('inscripcion_id');
 
@@ -742,16 +691,7 @@ public function finalizar(Request $request)
 
     } catch (\Exception $e) {
         DB::rollBack();
-
-        Log::error('CorporativasController@finalizar error', [
-            'inscripcion_id' => $inscripcionId,
-            'message' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-            'trace' => $e->getTraceAsString(),
-            'payload' => $request->except(['_token']),
-        ]);
-
+       // session()->forget('inscripcion_id');
         return redirect()->back()->with('error', 'Error al finalizar: ' . $e->getMessage());
     }
 }
